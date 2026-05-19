@@ -5,7 +5,7 @@ const BestCars = () => {
   const cars = [
     {
       id: 1,
-      name: "2022 Tesla Model 3",
+      name: "Mercedes-Benz-C-Class",
       price: "$42,000",
       mileage: "15,000 miles",
 
@@ -14,7 +14,7 @@ const BestCars = () => {
     },
     {
       id: 2,
-      name: "Rolls-Royce Ghost 2023",
+      name: "2022 Audi Q7",
       price: "$345,000",
       mileage: "5,000 miles",
 
@@ -23,7 +23,7 @@ const BestCars = () => {
     },
     {
       id: 3,
-      name: "2021 BMW X5",
+      name: "2021 Ford Mustang",
       price: "$55,000",
       mileage: "25,000 miles",
 

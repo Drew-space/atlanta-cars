@@ -35,7 +35,7 @@ const TopPicks = () => {
     },
   ];
   return (
-    <div className="container mx-auto">
+    <div className="container  mx-auto">
       <div className="">
         <div className="flex py-6 flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10 text-center md:text-left items-center md:items-start">
           <h2 className="text-4xl font-bold text-gray-900 leading-tight">

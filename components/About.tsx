@@ -1,4 +1,5 @@
 import Image from "next/image";
+import CarLogos from "./CarLogos";
 
 export default function About() {
   return (
@@ -10,7 +11,7 @@ export default function About() {
           <div className="rounded-3xl relative overflow-hidden shadow-md">
             {/* IMAGE */}
             <Image
-              src="https://images.unsplash.com/photo-1552519507-da3b142c6e3d?q=80&w=1200&auto=format&fit=crop"
+              src={"/images/about1.jpg"}
               alt="Car buyer"
               width={400}
               height={400}
@@ -22,7 +23,7 @@ export default function About() {
           </div>
 
           {/* CENTER CARD */}
-          <div className="bg-white rounded-3xl p-5 text-center shadow-md">
+          <div className="bg-muted rounded-3xl p-5 text-center shadow-sm">
             <h2 className="text-3xl font-semibold mb-4">
               About <span className="text-yellow-500">Us</span>
             </h2>
@@ -41,7 +42,7 @@ export default function About() {
           {/* RIGHT IMAGE */}
           <div className="rounded-3xl relative overflow-hidden shadow-md">
             <Image
-              src="https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?q=80&w=1200&auto=format&fit=crop"
+              src={"/images/about2.jpg"}
               alt="Car showroom"
               height={400}
               width={400}
@@ -53,26 +54,8 @@ export default function About() {
         </div>
 
         {/* BRAND LOGOS */}
-        <div className="mt-10 bg-[#eaeaea] rounded-2xl py-8 px-6">
-          <div className="flex flex-wrap justify-center items-center gap-12 opacity-70">
-            <img
-              src="https://cdn.worldvectorlogo.com/logos/audi-2.svg"
-              className="h-8"
-            />
-            <img
-              src="https://cdn.worldvectorlogo.com/logos/rolls-royce.svg"
-              className="h-8"
-            />
-            <img
-              src="https://cdn.worldvectorlogo.com/logos/jaguar-2.svg"
-              className="h-8"
-            />
-            <img
-              src="https://cdn.worldvectorlogo.com/logos/audi.svg"
-              className="h-8"
-            />
-          </div>
-        </div>
+
+        <CarLogos />
       </div>
     </section>
   );

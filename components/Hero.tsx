@@ -31,10 +31,6 @@ export default function Hero() {
       {/* Hero content */}
       <div className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-6 pt-32 pb-24 max-w-5xl mx-auto w-full">
         {/* Badge */}
-        <div className="mb-6 inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-white/10 bg-white/5 backdrop-blur-md text-xs text-white/70 font-medium tracking-wide">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#a3b800] animate-pulse" />
-          america's #1 Car Marketplace
-        </div>
 
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight mb-6">
           <span className="text-[#a3b800]">Buy</span> or{" "}
@@ -52,7 +48,7 @@ export default function Hero() {
         {/* CTAs */}
         <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
           <Link
-            href="/all-cars"
+            href="/allcars"
             className="px-8 py-3.5 bg-[#2e7d32] hover:bg-[#388e3c] text-white text-sm font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-green-900/50"
           >
             View All Cars

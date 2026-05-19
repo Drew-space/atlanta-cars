@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import Image from "next/image";
 
 const faqs = [
   {
@@ -49,12 +50,18 @@ export default function FAQ() {
           </div>
 
           {/* Image hidden on mobile, visible on md+ */}
-          <div className="hidden md:block rounded-2xl overflow-hidden border border-neutral-200 aspect-[4/3]">
-            <img
-              src="https://images.unsplash.com/photo-1583121274602-3e2820c69888?w=600&q=80&auto=format&fit=crop"
-              alt="Sports car on a road"
-              className="w-full h-full object-cover object-center"
+          <div className="rounded-3xl relative overflow-hidden shadow-md">
+            {/* IMAGE */}
+            <Image
+              src={"/images/faq.png"}
+              alt="Car buyer"
+              width={400}
+              height={400}
+              className="w-full h-[320px] object-cover"
             />
+
+            {/* INNER WHITE RING */}
+            <div className="pointer-events-none absolute inset-3 rounded-3xl ring-2 ring-white/80" />
           </div>
         </div>
 

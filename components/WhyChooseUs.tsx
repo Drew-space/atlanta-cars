@@ -43,7 +43,7 @@ function FeatureItem({
 }) {
   return (
     <div className="flex  max-sm:items-center max-sm:text-center flex-col gap-2">
-      <div className="w-11 h-11 rounded-lg border border-neutral-200 flex items-center justify-center">
+      <div className="w-11 h-11 rounded-lg ring ring-[#04995b] flex items-center justify-center">
         <Icon size={20} className="text-[#04995b]" />
       </div>
       <h3 className="text-[15px] font-medium text-neutral-900">{title}</h3>
