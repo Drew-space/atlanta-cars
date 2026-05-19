@@ -37,16 +37,18 @@ const TopPicks = () => {
   return (
     <div className="container mx-auto">
       <div className="">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
+        <div className="flex py-6 flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10 text-center md:text-left items-center md:items-start">
           <h2 className="text-4xl font-bold text-gray-900 leading-tight">
             Top Picks for Cars <br />
             on <span className="text-yellow-500">Sale</span>
           </h2>
-          <p className="text-gray-500 text-sm max-w-xs leading-relaxed">
+
+          <p className="text-gray-500 text-sm max-w-xs leading-relaxed mx-auto md:mx-0">
             Discover our best deals on cars for sale. Handpicked just for you,
             these cars come with excellent pricing and top quality.
           </p>
-          <button className="self-start md:self-auto bg-green-600 text-white font-semibold px-8 py-3 rounded-full hover:bg-green-700 transition-colors whitespace-nowrap">
+
+          <button className="bg-[#04995b] text-white font-semibold px-8 py-3 rounded-full hover:bg-[#04995b] transition-colors whitespace-nowrap mx-auto md:mx-0">
             View All
           </button>
         </div>

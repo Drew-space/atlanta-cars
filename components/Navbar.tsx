@@ -10,7 +10,7 @@ export default function Navbar() {
   const pathname = usePathname();
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    const onScroll = () => setScrolled(window.scrollY > 60);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
@@ -25,17 +25,19 @@ export default function Navbar() {
   return (
     <>
       <nav
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-white/97 shadow-sm" : "bg-white/97"
-        } backdrop-blur-md border-b border-gray-100`}
+        className={`absolute top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          scrolled
+            ? "bg-black/60 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/20"
+            : "bg-transparent"
+        }`}
       >
-        <div className="max-w-7xl mx-auto px-6 lg:px-10 flex items-center justify-between h-16 md:h-[68px]">
+        <div className="max-w-6xl mx-auto px-6 lg:px-10 flex items-center justify-between h-[72px]">
           {/* Logo */}
           <Link
             href="/"
-            className="font-montserrat font-black text-2xl tracking-tight text-gray-900"
+            className="font-black text-2xl tracking-tight text-white"
           >
-            LUX<span className="text-blue-500">ED</span>
+            LUX<span className="text-[#a3b800]">ED</span>
           </Link>
 
           {/* Desktop links */}
@@ -46,8 +48,8 @@ export default function Navbar() {
                   href={l.href}
                   className={`text-sm font-medium transition-colors duration-200 ${
                     pathname === l.href
-                      ? "text-blue-500"
-                      : "text-gray-700 hover:text-blue-500"
+                      ? "text-[#a3b800]"
+                      : "text-white/80 hover:text-white"
                   }`}
                 >
                   {l.label}
@@ -60,7 +62,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-3">
             <Link
               href="/#contact"
-              className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-all duration-200 hover:-translate-y-0.5"
+              className="px-5 py-2.5 bg-[#2e7d32] hover:bg-[#388e3c] text-white text-sm font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5 shadow-md shadow-green-900/40"
             >
               Contact Us
             </Link>
@@ -68,7 +70,7 @@ export default function Navbar() {
 
           {/* Hamburger */}
           <button
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="md:hidden p-2 rounded-lg text-white hover:bg-white/10 transition-colors"
             onClick={() => setOpen(!open)}
             aria-label="Toggle menu"
           >
@@ -79,31 +81,35 @@ export default function Navbar() {
 
       {/* Mobile menu */}
       <div
-        className={`fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-100 shadow-lg transition-all duration-300 md:hidden ${
+        className={`fixed top-0 left-0 right-0 bottom-0 z-40 bg-black/95 backdrop-blur-xl flex flex-col px-6 pt-24 pb-10 gap-2 md:hidden transition-all duration-300 ${
           open
-            ? "opacity-100 translate-y-0 pointer-events-auto"
-            : "opacity-0 -translate-y-2 pointer-events-none"
+            ? "opacity-100 pointer-events-auto"
+            : "opacity-0 pointer-events-none"
         }`}
       >
-        <div className="px-6 py-2 flex flex-col">
-          {links.map((l) => (
-            <Link
-              key={l.href}
-              href={l.href}
-              onClick={() => setOpen(false)}
-              className="py-3.5 border-b border-gray-100 text-sm font-medium text-gray-700 hover:text-blue-500 transition-colors"
-            >
-              {l.label}
-            </Link>
-          ))}
+        <button
+          className="absolute top-5 right-6 text-white p-2"
+          onClick={() => setOpen(false)}
+        >
+          <X size={22} />
+        </button>
+        {links.map((l) => (
           <Link
-            href="/#contact"
+            key={l.href}
+            href={l.href}
             onClick={() => setOpen(false)}
-            className="my-4 py-3 text-center bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-lg transition-colors"
+            className="py-4 border-b border-white/10 text-lg font-medium text-white/80 hover:text-white transition-colors"
           >
-            Contact Us
+            {l.label}
           </Link>
-        </div>
+        ))}
+        <Link
+          href="/#contact"
+          onClick={() => setOpen(false)}
+          className="mt-6 py-3.5 text-center bg-[#2e7d32] hover:bg-[#388e3c] text-white text-sm font-semibold rounded-full transition-colors"
+        >
+          Contact Us
+        </Link>
       </div>
     </>
   );

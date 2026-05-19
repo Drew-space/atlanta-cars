@@ -1,5 +1,7 @@
 import About from "@/components/About";
 import BestCars from "@/components/BestCars";
+import FAQ from "@/components/FAQ";
+import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
 import TopCarSection from "@/components/TopPicks";
 import TopPicks from "@/components/TopPicks";
@@ -14,6 +16,8 @@ export default function Home() {
       <TopCarSection />
       <BestCars />
       <WhyChooseUs />
+      <FAQ />
+      <Footer />
     </>
   );
 }
