@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
+import Image from "next/image";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -34,11 +35,8 @@ export default function Navbar() {
           }`}
         >
           {/* Logo */}
-          <Link
-            href="/"
-            className="font-black text-xl tracking-tight text-white"
-          >
-            LUX<span style={{ color: "#1E90FF" }}>ED</span>
+          <Link href="/">
+            <Image alt="logo" height={250} width={250} src={"/logo.svg"} />
           </Link>
 
           {/* Desktop links */}
