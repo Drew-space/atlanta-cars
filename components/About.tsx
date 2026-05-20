@@ -3,7 +3,7 @@ import CarLogos from "./CarLogos";
 
 export default function About() {
   return (
-    <section className="bg-[#f3f3f3] py-16">
+    <section className="bg-[#f3f3f3] py-16 " id="about">
       <div className="max-w-6xl mx-auto px-6">
         {/* TOP GRID */}
         <div className="grid md:grid-cols-3 gap-6 items-center">
@@ -25,7 +25,7 @@ export default function About() {
           {/* CENTER CARD */}
           <div className="bg-muted rounded-3xl p-5 text-center shadow-sm">
             <h2 className="text-3xl font-semibold mb-4">
-              About <span className="text-yellow-500">Us</span>
+              About <span className="text-[#1E90FF] ">Us</span>
             </h2>
 
             <p className="text-gray-500 leading-relaxed mb-6">
@@ -34,7 +34,7 @@ export default function About() {
               all designed to make your experience smooth and hassle-free.
             </p>
 
-            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-full font-medium transition">
+            <button className="bg-blue-500 hover:bg-blue-700 text-white px-6 py-3 rounded-full font-medium transition">
               Learn More
             </button>
           </div>

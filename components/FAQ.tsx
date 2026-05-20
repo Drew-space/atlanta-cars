@@ -44,7 +44,7 @@ export default function FAQ() {
             <h2 className="text-4xl font-semibold text-neutral-900 leading-tight">
               Frequently Asked
             </h2>
-            <h2 className="text-4xl font-semibold text-[#04995b] leading-tight">
+            <h2 className="text-4xl font-semibold text-[#1E90FF] leading-tight">
               Questions
             </h2>
           </div>
@@ -75,7 +75,7 @@ export default function FAQ() {
                 onClick={() => setOpenIndex(isOpen ? -1 : i)}
                 className={`w-full text-left rounded-2xl px-5 py-4 transition-colors duration-200 ${
                   isOpen
-                    ? "bg-[#04995b] text-white"
+                    ? "bg-[#1E90FF] text-white"
                     : "bg-neutral-100 text-neutral-900 hover:bg-neutral-200"
                 }`}
               >
@@ -86,8 +86,8 @@ export default function FAQ() {
                   <span
                     className={`shrink-0 w-9 h-9 rounded-full flex items-center justify-center transition-colors duration-200 ${
                       isOpen
-                        ? "bg-white text-[#04995b]"
-                        : "bg-[#04995b] text-white"
+                        ? "bg-white text-[#1E90FF]"
+                        : "bg-[#1E90FF] text-white"
                     }`}
                   >
                     {isOpen ? (

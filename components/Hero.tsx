@@ -10,7 +10,6 @@ export default function Hero() {
 
   return (
     <section className="relative min-h-screen bg-neutral-950 overflow-hidden flex flex-col">
-      {/* Navbar floats here */}
       <Navbar />
 
       {/* Background image */}
@@ -22,19 +21,23 @@ export default function Hero() {
         />
         {/* Dark gradient overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/30 to-neutral-950" />
-        {/* Green radial glow bottom-right */}
-        <div className="absolute bottom-0 right-0 w-[600px] h-[600px] bg-[#2e7d32]/20 rounded-full blur-[120px] translate-x-1/4 translate-y-1/4" />
-        {/* Subtle green glow top-left */}
-        <div className="absolute top-0 left-0 w-[300px] h-[300px] bg-[#a3b800]/10 rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2" />
+        {/* Blue radial glow bottom-right */}
+        <div
+          className="absolute bottom-0 right-0 w-[600px] h-[600px] rounded-full blur-[120px] translate-x-1/4 translate-y-1/4"
+          style={{ background: "rgba(30,144,255,0.15)" }}
+        />
+        {/* Subtle blue glow top-left */}
+        <div
+          className="absolute top-0 left-0 w-[300px] h-[300px] rounded-full blur-[80px] -translate-x-1/2 -translate-y-1/2"
+          style={{ background: "rgba(30,144,255,0.08)" }}
+        />
       </div>
 
       {/* Hero content */}
       <div className="relative z-10 flex flex-col items-center justify-center flex-1 text-center px-6 pt-32 pb-24 max-w-5xl mx-auto w-full">
-        {/* Badge */}
-
         <h1 className="text-4xl md:text-6xl lg:text-7xl font-black text-white leading-[1.05] tracking-tight mb-6">
-          <span className="text-[#a3b800]">Buy</span> or{" "}
-          <span className="text-[#a3b800]">Rent</span>
+          <span style={{ color: "#1E90FF" }}>Buy</span> or{" "}
+          <span style={{ color: "#1E90FF" }}>Rent</span>
           <br />
           your dream car today
         </h1>
@@ -49,7 +52,11 @@ export default function Hero() {
         <div className="flex flex-wrap items-center justify-center gap-4 mb-16">
           <Link
             href="/allcars"
-            className="px-8 py-3.5 bg-[#2e7d32] hover:bg-[#388e3c] text-white text-sm font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5 shadow-lg shadow-green-900/50"
+            className="px-8 py-3.5 text-white text-sm font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5"
+            style={{
+              background: "#1E90FF",
+              boxShadow: "0 8px 24px rgba(30,144,255,0.35)",
+            }}
           >
             View All Cars
           </Link>
@@ -79,7 +86,7 @@ export default function Hero() {
         </div>
       </div>
 
-      {/* Bottom fade into next section */}
+      {/* Bottom fade */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-neutral-950 to-transparent z-10" />
     </section>
   );

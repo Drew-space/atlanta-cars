@@ -40,7 +40,7 @@ const TopPicks = () => {
         <div className="flex py-6 flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10 text-center md:text-left items-center md:items-start">
           <h2 className="text-4xl font-bold text-gray-900 leading-tight">
             Top Picks for Cars <br />
-            on <span className="text-yellow-500">Sale</span>
+            on <span className="text-[#1E90FF] ">Sale</span>
           </h2>
 
           <p className="text-gray-500 text-sm max-w-xs leading-relaxed mx-auto md:mx-0">
@@ -48,7 +48,7 @@ const TopPicks = () => {
             these cars come with excellent pricing and top quality.
           </p>
 
-          <button className="bg-[#04995b] text-white font-semibold px-8 py-3 rounded-full hover:bg-[#04995b] transition-colors whitespace-nowrap mx-auto md:mx-0">
+          <button className="bg-[#1E90FF] text-white font-semibold px-8 py-3 rounded-full hover:bg-[#1E90FF] transition-colors whitespace-nowrap mx-auto md:mx-0">
             View All
           </button>
         </div>

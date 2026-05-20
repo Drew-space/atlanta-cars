@@ -2,7 +2,6 @@
 import { useState, useMemo } from "react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-
 import { cars, allTags, allBrands } from "@/lib/cars";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import CarCard from "@/components/CarCard";
@@ -12,7 +11,7 @@ export default function AllCarsPage() {
   const [activeTag, setActiveTag] = useState("All");
   const [activeBrand, setActiveBrand] = useState("All Brands");
   const [activeAvailable, setActiveAvailable] = useState("All");
-  const [maxPrice, setMaxPrice] = useState(100000000);
+  const [maxPrice, setMaxPrice] = useState(1200000);
   const [showFilters, setShowFilters] = useState(false);
 
   const availableOptions = ["All", "Buy", "Rent", "Both"];
@@ -20,17 +19,16 @@ export default function AllCarsPage() {
   const filtered = useMemo(() => {
     return cars.filter((car) => {
       const q = query.toLowerCase();
-
       const matchesQuery =
         !query ||
         car.name.toLowerCase().includes(q) ||
         car.brand.toLowerCase().includes(q) ||
         car.type.toLowerCase().includes(q) ||
-        car.tags.some((t) => t.toLowerCase().includes(q));
+        car.tags?.some((t) => t.toLowerCase().includes(q));
 
       const matchesTag =
         activeTag === "All" ||
-        car.tags.includes(activeTag) ||
+        car.tags?.includes(activeTag) ||
         car.type === activeTag ||
         (activeTag === "Used Car" && car.condition === "Used");
 
@@ -60,7 +58,7 @@ export default function AllCarsPage() {
     setActiveTag("All");
     setActiveBrand("All Brands");
     setActiveAvailable("All");
-    setMaxPrice(100000000);
+    setMaxPrice(1200000);
   };
 
   const hasFilters =
@@ -68,16 +66,15 @@ export default function AllCarsPage() {
     activeTag !== "All" ||
     activeBrand !== "All Brands" ||
     activeAvailable !== "All" ||
-    maxPrice < 100000000;
+    maxPrice < 1200000;
 
   return (
     <>
       <Navbar />
 
       <main className="min-h-screen bg-gray-50">
-        {/* ── Hero header with Unsplash background ── */}
+        {/* Hero header */}
         <div className="relative overflow-hidden">
-          {/* Background */}
           <img
             src="https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?w=1600&q=80&auto=format&fit=crop"
             alt="Cars background"
@@ -85,20 +82,26 @@ export default function AllCarsPage() {
           />
           <div className="absolute inset-0 bg-black/65" />
 
-          {/* Content */}
           <div className="relative z-10 max-w-5xl mx-auto px-6 lg:px-10 pt-36 pb-16">
-            <span className="inline-block bg-green-500/20 border border-green-500/30 text-green-400 text-xs font-bold tracking-widest uppercase px-3 py-1.5 rounded-full mb-4">
+            <span
+              className="inline-block text-xs font-bold tracking-widest uppercase px-3 py-1.5 rounded-full mb-4 border"
+              style={{
+                background: "rgba(30,144,255,0.15)",
+                borderColor: "rgba(30,144,255,0.3)",
+                color: "#1E90FF",
+              }}
+            >
               Our Inventory
             </span>
             <h1 className="font-black text-4xl md:text-5xl tracking-tight text-white mb-3">
-              All <span className="text-[#a3b800]">Cars</span>
+              All <span style={{ color: "#1E90FF" }}>Cars</span>
             </h1>
             <p className="text-white/60 text-sm max-w-xl leading-relaxed mb-8">
               Browse our full collection of premium vehicles. Filter by type,
               brand, price, or availability to find your perfect match.
             </p>
 
-            {/* Search bar */}
+            {/* Search */}
             <div className="relative max-w-xl">
               <Search
                 size={17}
@@ -109,13 +112,24 @@ export default function AllCarsPage() {
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name, brand, or type…"
-                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white/10 border border-white/15 text-white placeholder:text-white/30 text-sm focus:outline-none focus:border-green-500/60 focus:bg-white/15 backdrop-blur-md transition-all"
+                className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white/10 border border-white/15 text-white placeholder:text-white/30 text-sm focus:outline-none backdrop-blur-md transition-all"
+                style={
+                  {
+                    ["--tw-ring-color" as string]: "#1E90FF",
+                  } as React.CSSProperties
+                }
+                onFocus={(e) =>
+                  (e.currentTarget.style.borderColor = "rgba(30,144,255,0.5)")
+                }
+                onBlur={(e) =>
+                  (e.currentTarget.style.borderColor = "rgba(255,255,255,0.15)")
+                }
               />
             </div>
           </div>
         </div>
 
-        {/* ── Filters + Grid ── */}
+        {/* Filters + Grid */}
         <div className="max-w-5xl mx-auto px-6 lg:px-10 py-10">
           {/* Tag pills */}
           <div className="flex flex-wrap gap-2 mb-6">
@@ -123,11 +137,20 @@ export default function AllCarsPage() {
               <button
                 key={tag}
                 onClick={() => setActiveTag(tag)}
-                className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 border ${
+                className="px-4 py-1.5 rounded-full text-xs font-semibold transition-all duration-200 border"
+                style={
                   activeTag === tag
-                    ? "bg-[#2e7d32] text-white border-[#2e7d32] shadow-md shadow-green-900/20"
-                    : "bg-white text-gray-500 border-gray-200 hover:border-green-400 hover:text-green-700"
-                }`}
+                    ? {
+                        background: "#1E90FF",
+                        color: "#fff",
+                        borderColor: "#1E90FF",
+                      }
+                    : {
+                        background: "#fff",
+                        color: "#6b7280",
+                        borderColor: "#e5e7eb",
+                      }
+                }
               >
                 {tag}
               </button>
@@ -136,48 +159,46 @@ export default function AllCarsPage() {
 
           {/* Filters row */}
           <div className="flex flex-wrap gap-3 items-center mb-6">
-            {/* Brand */}
             <select
               value={activeBrand}
               onChange={(e) => setActiveBrand(e.target.value)}
-              className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none focus:border-green-400 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none cursor-pointer"
             >
               {allBrands.map((b) => (
                 <option key={b}>{b}</option>
               ))}
             </select>
 
-            {/* Availability toggle */}
             <div className="flex rounded-xl border border-gray-200 bg-white overflow-hidden">
               {availableOptions.map((opt) => (
                 <button
                   key={opt}
                   onClick={() => setActiveAvailable(opt)}
-                  className={`px-4 py-2.5 text-xs font-semibold transition-colors border-r last:border-r-0 border-gray-200 ${
+                  className="px-4 py-2.5 text-xs font-semibold transition-colors border-r last:border-r-0 border-gray-200"
+                  style={
                     activeAvailable === opt
-                      ? "bg-[#2e7d32] text-white"
-                      : "text-gray-500 hover:text-green-700 hover:bg-gray-50"
-                  }`}
+                      ? { background: "#1E90FF", color: "#fff" }
+                      : { color: "#6b7280" }
+                  }
                 >
                   {opt}
                 </button>
               ))}
             </div>
 
-            {/* Price toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm transition-colors ${
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm transition-colors bg-white"
+              style={
                 showFilters
-                  ? "border-green-400 text-green-700 bg-green-50"
-                  : "border-gray-200 bg-white text-gray-600 hover:border-green-400"
-              }`}
+                  ? { borderColor: "#1E90FF", color: "#1E90FF" }
+                  : { borderColor: "#e5e7eb", color: "#6b7280" }
+              }
             >
               <SlidersHorizontal size={15} />
               Price Filter
             </button>
 
-            {/* Clear */}
             {hasFilters && (
               <button
                 onClick={clearFilters}
@@ -194,24 +215,25 @@ export default function AllCarsPage() {
 
           {/* Price slider */}
           {showFilters && (
-            <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <div className="bg-white rounded-2xl border border-gray-100 p-5 mb-8 flex flex-col sm:flex-row items-start sm:items-center gap-4">
               <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">
                 Max Price:{" "}
-                <span className="text-[#2e7d32]">
-                  ₦{maxPrice.toLocaleString("en-NG")}
+                <span style={{ color: "#1E90FF" }}>
+                  ${maxPrice.toLocaleString("en-US")}
                 </span>
               </label>
               <input
                 type="range"
-                min={5000000}
-                max={100000000}
-                step={500000}
+                min={10000}
+                max={1200000}
+                step={5000}
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(Number(e.target.value))}
-                className="flex-1 accent-green-600 h-2 rounded-full"
+                className="flex-1 h-2 rounded-full"
+                style={{ accentColor: "#1E90FF" }}
               />
               <span className="text-xs text-gray-400 whitespace-nowrap">
-                Up to ₦100,000,000
+                Up to $1,200,000
               </span>
             </div>
           )}
@@ -234,7 +256,8 @@ export default function AllCarsPage() {
               </p>
               <button
                 onClick={clearFilters}
-                className="px-5 py-2.5 bg-[#2e7d32] hover:bg-[#388e3c] text-white text-sm font-semibold rounded-xl transition-colors"
+                className="px-5 py-2.5 text-white text-sm font-semibold rounded-xl transition-colors"
+                style={{ background: "#1E90FF" }}
               >
                 Reset Filters
               </button>

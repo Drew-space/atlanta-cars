@@ -39,7 +39,7 @@ export default function CarDetailPage({
   const next = () =>
     setActiveImg((i) => (i === car.images.length - 1 ? 0 : i + 1));
 
-  const formatPrice = (n: number) => "₦" + n.toLocaleString("en-NG");
+  const formatPrice = (n: number) => "$" + n.toLocaleString("en-US");
 
   const specs = [
     { icon: Fuel, label: "Fuel Type", value: car.fuelType },
@@ -56,15 +56,13 @@ export default function CarDetailPage({
     {
       icon: Tag,
       label: "Mileage",
-      value: `${car.mileage.toLocaleString()} km`,
+      value: `${car.mileage.toLocaleString()} mi`,
     },
   ];
 
   return (
     <>
-      <Navbar />
-
-      <main className="min-h-screen bg-gray-50 pt-20">
+      <main className="min-h-screen bg-gray-50 pt-5">
         <div className="max-w-5xl mx-auto px-6 lg:px-10 py-10">
           {/* Back */}
           <Link
@@ -76,9 +74,8 @@ export default function CarDetailPage({
           </Link>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-            {/* ── Left: Image carousel ── */}
+            {/* Left: carousel */}
             <div className="flex flex-col gap-4">
-              {/* Main image */}
               <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-gray-100">
                 <img
                   key={activeImg}
@@ -87,7 +84,6 @@ export default function CarDetailPage({
                   className="w-full h-full object-cover transition-opacity duration-300"
                 />
 
-                {/* Prev / Next */}
                 {car.images.length > 1 && (
                   <>
                     <button
@@ -105,7 +101,6 @@ export default function CarDetailPage({
                   </>
                 )}
 
-                {/* Dot indicators */}
                 <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
                   {car.images.map((_, i) => (
                     <button
@@ -118,29 +113,29 @@ export default function CarDetailPage({
                   ))}
                 </div>
 
-                {/* Condition badge */}
                 <span
-                  className={`absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-full ${
+                  className="absolute top-3 left-3 text-[10px] font-bold px-2.5 py-1 rounded-full text-white"
+                  style={
                     car.condition === "New"
-                      ? "bg-green-500 text-white"
-                      : "bg-amber-500 text-white"
-                  }`}
+                      ? { background: "#1E90FF" }
+                      : { background: "#f59e0b" }
+                  }
                 >
                   {car.condition}
                 </span>
               </div>
 
-              {/* Thumbnail strip */}
+              {/* Thumbnails */}
               <div className="flex gap-2">
                 {car.images.map((src, i) => (
                   <button
                     key={i}
                     onClick={() => setActiveImg(i)}
-                    className={`flex-1 rounded-xl overflow-hidden aspect-[16/10] border-2 transition-all duration-200 ${
-                      i === activeImg
-                        ? "border-[#2e7d32]"
-                        : "border-transparent opacity-60 hover:opacity-90"
-                    }`}
+                    className="flex-1 rounded-xl overflow-hidden aspect-[16/10] border-2 transition-all duration-200"
+                    style={{
+                      borderColor: i === activeImg ? "#1E90FF" : "transparent",
+                      opacity: i === activeImg ? 1 : 0.6,
+                    }}
                   >
                     <img
                       src={src}
@@ -152,9 +147,8 @@ export default function CarDetailPage({
               </div>
             </div>
 
-            {/* ── Right: Details ── */}
+            {/* Right: details */}
             <div className="flex flex-col gap-6">
-              {/* Title */}
               <div>
                 <p className="text-xs text-gray-400 font-semibold uppercase tracking-widest mb-1">
                   {car.brand} · {car.year}
@@ -167,17 +161,21 @@ export default function CarDetailPage({
 
               {/* Tags */}
               <div className="flex flex-wrap gap-2">
-                {car.tags.map((t) => (
+                {car.tags?.map((t) => (
                   <span
                     key={t}
-                    className="text-[11px] font-semibold px-3 py-1 rounded-full bg-green-50 text-green-700 border border-green-200"
+                    className="text-[11px] font-semibold px-3 py-1 rounded-full border"
+                    style={{
+                      background: "rgba(30,144,255,0.06)",
+                      borderColor: "rgba(30,144,255,0.25)",
+                      color: "#1E90FF",
+                    }}
                   >
                     {t}
                   </span>
                 ))}
               </div>
 
-              {/* Description */}
               <p className="text-sm text-gray-500 leading-relaxed">
                 {car.description}
               </p>
@@ -195,8 +193,14 @@ export default function CarDetailPage({
                   </div>
                 )}
                 {car.rentPricePerDay && (
-                  <div className="flex-1 bg-[#2e7d32] rounded-2xl p-4 flex flex-col gap-1">
-                    <p className="text-[11px] text-green-200 font-medium">
+                  <div
+                    className="flex-1 rounded-2xl p-4 flex flex-col gap-1"
+                    style={{ background: "#1E90FF" }}
+                  >
+                    <p
+                      className="text-[11px] font-medium"
+                      style={{ color: "rgba(255,255,255,0.7)" }}
+                    >
                       Rent per day
                     </p>
                     <p className="text-xl font-black text-white">
@@ -211,7 +215,8 @@ export default function CarDetailPage({
                 href={`https://wa.me/2348000000000?text=Hi%2C+I'm+interested+in+the+${encodeURIComponent(car.name)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-4 bg-[#2e7d32] hover:bg-[#388e3c] text-white font-semibold rounded-2xl transition-colors shadow-lg shadow-green-900/20 text-sm"
+                className="flex items-center justify-center gap-2 w-full py-4 text-white font-semibold rounded-2xl transition-colors text-sm"
+                style={{ background: "#1E90FF" }}
               >
                 <Phone size={16} />
                 Contact to Book
@@ -226,7 +231,7 @@ export default function CarDetailPage({
             </div>
           </div>
 
-          {/* ── Specs grid ── */}
+          {/* Specs */}
           <div className="mt-14">
             <h2 className="text-xl font-black text-gray-900 mb-6">
               Vehicle Specifications
@@ -237,8 +242,11 @@ export default function CarDetailPage({
                   key={label}
                   className="bg-white border border-gray-100 rounded-2xl p-4 flex flex-col gap-2"
                 >
-                  <div className="w-8 h-8 rounded-lg bg-green-50 flex items-center justify-center">
-                    <Icon size={15} className="text-[#2e7d32]" />
+                  <div
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{ background: "rgba(30,144,255,0.08)" }}
+                  >
+                    <Icon size={15} style={{ color: "#1E90FF" }} />
                   </div>
                   <p className="text-[11px] text-gray-400 font-medium">
                     {label}
@@ -249,39 +257,44 @@ export default function CarDetailPage({
             </div>
           </div>
 
-          {/* ── Features ── */}
+          {/* Features */}
           <div className="mt-10">
             <h2 className="text-xl font-black text-gray-900 mb-6">
               Features & Equipment
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {car.features.map((f) => (
+              {car.features?.map((f) => (
                 <div
                   key={f}
                   className="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-4 py-3"
                 >
-                  <CheckCircle2 size={15} className="text-[#2e7d32] shrink-0" />
+                  <CheckCircle2
+                    size={15}
+                    className="shrink-0"
+                    style={{ color: "#1E90FF" }}
+                  />
                   <span className="text-sm text-gray-700">{f}</span>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* ── Bottom CTA banner ── */}
+          {/* Bottom CTA */}
           <div className="mt-14 bg-neutral-950 rounded-3xl px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
             <div>
               <h3 className="text-white font-black text-xl mb-1">
                 Ready to drive the {car.name}?
               </h3>
               <p className="text-gray-400 text-sm">
-                Contact our team and we'll get you behind the wheel.
+                Contact our team and we&apos;ll get you behind the wheel.
               </p>
             </div>
             <a
               href={`https://wa.me/2348000000000?text=Hi%2C+I'm+interested+in+the+${encodeURIComponent(car.name)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 flex items-center gap-2 px-7 py-3.5 bg-[#2e7d32] hover:bg-[#388e3c] text-white text-sm font-semibold rounded-full transition-colors shadow-lg shadow-green-900/30"
+              className="shrink-0 flex items-center gap-2 px-7 py-3.5 text-white text-sm font-semibold rounded-full transition-colors"
+              style={{ background: "#1E90FF" }}
             >
               <Phone size={15} />
               Contact to Book

@@ -43,8 +43,8 @@ function FeatureItem({
 }) {
   return (
     <div className="flex  max-sm:items-center max-sm:text-center flex-col gap-2">
-      <div className="w-11 h-11 rounded-lg ring ring-[#04995b] flex items-center justify-center">
-        <Icon size={20} className="text-[#04995b]" />
+      <div className="w-11 h-11 rounded-lg ring ring-[#1E90FF] flex items-center justify-center">
+        <Icon size={20} className="text-[#1E90FF]" />
       </div>
       <h3 className="text-[15px] font-medium text-neutral-900">{title}</h3>
       <p className="text-[13px] text-neutral-500 leading-relaxed">
@@ -61,7 +61,7 @@ export default function WhyChooseUs() {
         {/* Header */}
         <div className="text-center mb-14">
           <h2 className="text-3xl font-medium text-neutral-900 mb-3">
-            Why <span className="text-[#04995b]">Choose</span> Us
+            Why <span className="text-[#1E90FF]">Choose</span> Us
           </h2>
           <p className="text-sm text-neutral-500 leading-relaxed max-w-md mx-auto">
             We provide a smooth car buying or renting experience with great

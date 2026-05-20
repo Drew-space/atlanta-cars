@@ -4,12 +4,12 @@ import { Car } from "@/lib/cars";
 import { Fuel, Gauge, Settings2, Tag } from "lucide-react";
 
 export default function CarCard({ car }: { car: Car }) {
-  const formatPrice = (n: number) => "₦" + n.toLocaleString("en-NG");
+  const formatPrice = (n: number) => "$" + n.toLocaleString("en-US");
 
   return (
     <Link
       href={`/cars/${car.id}`}
-      className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-green-200 hover:shadow-xl hover:shadow-green-500/5 transition-all duration-300 flex flex-col"
+      className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-blue-200 transition-all duration-300 flex flex-col"
     >
       {/* Image */}
       <div className="relative overflow-hidden aspect-[16/10] bg-gray-100">
@@ -22,10 +22,9 @@ export default function CarCard({ car }: { car: Car }) {
         <div className="absolute top-3 left-3 flex gap-1.5">
           <span
             className={`text-[10px] font-bold px-2 py-1 rounded-full ${
-              car.condition === "New"
-                ? "bg-green-500 text-white"
-                : "bg-amber-500 text-white"
+              car.condition === "New" ? "text-white" : "bg-amber-500 text-white"
             }`}
+            style={car.condition === "New" ? { background: "#1E90FF" } : {}}
           >
             {car.condition}
           </span>
@@ -93,7 +92,14 @@ export default function CarCard({ car }: { car: Car }) {
             )}
           </div>
 
-          <span className="shrink-0 text-[10px] font-semibold px-2.5 py-1.5 rounded-full border border-green-200 text-green-700 bg-green-50 flex items-center gap-1">
+          <span
+            className="shrink-0 text-[10px] font-semibold px-2.5 py-1.5 rounded-full border flex items-center gap-1"
+            style={{
+              borderColor: "rgba(30,144,255,0.3)",
+              color: "#1E90FF",
+              background: "rgba(30,144,255,0.06)",
+            }}
+          >
             <Tag size={9} />
             {car.type}
           </span>
