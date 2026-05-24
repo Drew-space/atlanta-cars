@@ -1,14 +1,19 @@
 "use client";
 import Link from "next/link";
-import { Car } from "@/lib/cars";
+import { Doc } from "@/convex/_generated/dataModel";
 import { Fuel, Gauge, Settings2, Tag } from "lucide-react";
 
-export default function CarCard({ car }: { car: Car }) {
+// Use the Convex-generated Doc type — includes _id and _creationTime automatically
+type CarCardProps = {
+  car: Doc<"cars">;
+};
+
+export default function CarCard({ car }: CarCardProps) {
   const formatPrice = (n: number) => "$" + n.toLocaleString("en-US");
 
   return (
     <Link
-      href={`/cars/${car.id}`}
+      href={`/cars/${car._id}`}
       className="group bg-white rounded-2xl overflow-hidden border border-gray-100 hover:border-blue-200 transition-all duration-300 flex flex-col"
     >
       {/* Image */}

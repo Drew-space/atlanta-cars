@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
+import { Show, SignUpButton } from "@clerk/nextjs";
+import { Button } from "./ui/button";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -42,7 +44,7 @@ export default function Navbar() {
 
           {/* CTA */}
           <div className="hidden md:flex items-center">
-            <Link
+            {/* <Link
               href="/#contact"
               className="px-5 py-2.5 text-white text-sm font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5"
               style={{ background: "#1E90FF" }}
@@ -54,7 +56,20 @@ export default function Navbar() {
               }
             >
               Contact Us
-            </Link>
+            </Link> */}
+
+            <Show when="signed-out">
+              <SignUpButton>
+                <Button variant={"outline"}>Sign Up</Button>
+              </SignUpButton>
+            </Show>
+            <Show when="signed-in">
+              <Link href={"/admin"}>
+                <Button variant={"outline"}>Dashboard</Button>
+              </Link>
+
+              {/* <UserButton /> */}
+            </Show>
           </div>
 
           {/* Hamburger */}
@@ -113,14 +128,27 @@ export default function Navbar() {
           ))}
         </div>
 
-        <Link
+        {/* <Link
           href="/#contact"
           onClick={() => setOpen(false)}
           className="py-3.5 text-center text-white text-sm font-semibold rounded-2xl"
           style={{ background: "#1E90FF" }}
         >
           Contact Us
-        </Link>
+        </Link> */}
+
+        <Show when="signed-out">
+          <SignUpButton>
+            <Button variant={"outline"}>Sign Up</Button>
+          </SignUpButton>
+        </Show>
+        <Show when="signed-in">
+          <Link href={"/dashboard"}>
+            <Button variant={"outline"}>Dashboard</Button>
+          </Link>
+
+          {/* <UserButton /> */}
+        </Show>
       </div>
     </>
   );

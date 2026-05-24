@@ -1,10 +1,24 @@
 "use client";
 import { useState, useMemo } from "react";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { cars, allTags, allBrands } from "@/lib/cars";
-import { Search, SlidersHorizontal, X } from "lucide-react";
 import CarCard from "@/components/CarCard";
+import { Search, SlidersHorizontal, X } from "lucide-react";
+
+const BASE_TAGS = ["All", "Sedan", "SUV", "Sports"];
+const EXTRA_TAGS = [
+  "Luxury",
+  "Performance",
+  "Off-Road",
+  "Family",
+  "Premium",
+  "Electric",
+  "Used Car",
+];
+const ALL_TAGS = [...BASE_TAGS, ...EXTRA_TAGS];
+const AVAILABLE_OPTIONS = ["All", "Buy", "Rent", "Both"];
 
 export default function AllCarsPage() {
   const [query, setQuery] = useState("");
@@ -14,44 +28,19 @@ export default function AllCarsPage() {
   const [maxPrice, setMaxPrice] = useState(1200000);
   const [showFilters, setShowFilters] = useState(false);
 
-  const availableOptions = ["All", "Buy", "Rent", "Both"];
+  // ── Fetch all brands for the dropdown ────────────────────────────
+  const brands = useQuery(api.cars.getAllBrands) ?? ["All Brands"];
 
-  const filtered = useMemo(() => {
-    return cars.filter((car) => {
-      const q = query.toLowerCase();
-      const matchesQuery =
-        !query ||
-        car.name.toLowerCase().includes(q) ||
-        car.brand.toLowerCase().includes(q) ||
-        car.type.toLowerCase().includes(q) ||
-        car.tags?.some((t) => t.toLowerCase().includes(q));
-
-      const matchesTag =
-        activeTag === "All" ||
-        car.tags?.includes(activeTag) ||
-        car.type === activeTag ||
-        (activeTag === "Used Car" && car.condition === "Used");
-
-      const matchesBrand =
-        activeBrand === "All Brands" || car.brand === activeBrand;
-
-      const matchesAvailable =
-        activeAvailable === "All" ||
-        car.available === activeAvailable ||
-        car.available === "Both";
-
-      const relevantPrice = car.buyPrice ?? car.rentPricePerDay ?? 0;
-      const matchesPrice = relevantPrice <= maxPrice;
-
-      return (
-        matchesQuery &&
-        matchesTag &&
-        matchesBrand &&
-        matchesAvailable &&
-        matchesPrice
-      );
-    });
-  }, [query, activeTag, activeBrand, activeAvailable, maxPrice]);
+  // ── Fetch cars with all active filters applied server-side ────────
+  const cars =
+    useQuery(api.cars.getCars, {
+      search: query || undefined,
+      tag: activeTag !== "All" ? activeTag : undefined,
+      brand: activeBrand !== "All Brands" ? activeBrand : undefined,
+      available: activeAvailable !== "All" ? activeAvailable : undefined,
+      maxPrice: maxPrice < 1200000 ? maxPrice : undefined,
+      onlyPublished: true,
+    }) ?? [];
 
   const clearFilters = () => {
     setQuery("");
@@ -67,6 +56,8 @@ export default function AllCarsPage() {
     activeBrand !== "All Brands" ||
     activeAvailable !== "All" ||
     maxPrice < 1200000;
+
+  const isLoading = cars === undefined;
 
   return (
     <>
@@ -113,11 +104,6 @@ export default function AllCarsPage() {
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search by name, brand, or type…"
                 className="w-full pl-11 pr-4 py-3.5 rounded-2xl bg-white/10 border border-white/15 text-white placeholder:text-white/30 text-sm focus:outline-none backdrop-blur-md transition-all"
-                style={
-                  {
-                    ["--tw-ring-color" as string]: "#1E90FF",
-                  } as React.CSSProperties
-                }
                 onFocus={(e) =>
                   (e.currentTarget.style.borderColor = "rgba(30,144,255,0.5)")
                 }
@@ -133,7 +119,7 @@ export default function AllCarsPage() {
         <div className="max-w-5xl mx-auto px-6 lg:px-10 py-10">
           {/* Tag pills */}
           <div className="flex flex-wrap gap-2 mb-6">
-            {allTags.map((tag) => (
+            {ALL_TAGS.map((tag) => (
               <button
                 key={tag}
                 onClick={() => setActiveTag(tag)}
@@ -159,18 +145,20 @@ export default function AllCarsPage() {
 
           {/* Filters row */}
           <div className="flex flex-wrap gap-3 items-center mb-6">
+            {/* Brand dropdown */}
             <select
               value={activeBrand}
               onChange={(e) => setActiveBrand(e.target.value)}
               className="px-4 py-2.5 rounded-xl border border-gray-200 bg-white text-sm text-gray-700 focus:outline-none cursor-pointer"
             >
-              {allBrands.map((b) => (
+              {brands.map((b) => (
                 <option key={b}>{b}</option>
               ))}
             </select>
 
+            {/* Availability toggle */}
             <div className="flex rounded-xl border border-gray-200 bg-white overflow-hidden">
-              {availableOptions.map((opt) => (
+              {AVAILABLE_OPTIONS.map((opt) => (
                 <button
                   key={opt}
                   onClick={() => setActiveAvailable(opt)}
@@ -186,6 +174,7 @@ export default function AllCarsPage() {
               ))}
             </div>
 
+            {/* Price filter toggle */}
             <button
               onClick={() => setShowFilters(!showFilters)}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm transition-colors bg-white"
@@ -199,6 +188,7 @@ export default function AllCarsPage() {
               Price Filter
             </button>
 
+            {/* Clear all */}
             {hasFilters && (
               <button
                 onClick={clearFilters}
@@ -209,7 +199,9 @@ export default function AllCarsPage() {
             )}
 
             <span className="ml-auto text-sm text-gray-400 font-medium">
-              {filtered.length} car{filtered.length !== 1 ? "s" : ""} found
+              {isLoading
+                ? "Loading…"
+                : `${cars.length} car${cars.length !== 1 ? "s" : ""} found`}
             </span>
           </div>
 
@@ -238,14 +230,41 @@ export default function AllCarsPage() {
             </div>
           )}
 
-          {/* Car grid */}
-          {filtered.length > 0 ? (
+          {/* Loading skeleton */}
+          {isLoading && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-              {filtered.map((car) => (
-                <CarCard key={car.id} car={car} />
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="bg-white rounded-2xl overflow-hidden border border-gray-100 animate-pulse"
+                >
+                  <div className="aspect-[16/10] bg-gray-200" />
+                  <div className="p-4 flex flex-col gap-3">
+                    <div className="h-3 bg-gray-200 rounded w-1/2" />
+                    <div className="h-4 bg-gray-200 rounded w-3/4" />
+                    <div className="grid grid-cols-3 gap-2">
+                      {[1, 2, 3].map((j) => (
+                        <div key={j} className="h-10 bg-gray-100 rounded-xl" />
+                      ))}
+                    </div>
+                    <div className="h-4 bg-gray-200 rounded w-1/3 mt-2" />
+                  </div>
+                </div>
               ))}
             </div>
-          ) : (
+          )}
+
+          {/* Car grid */}
+          {!isLoading && cars.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {cars.map((car) => (
+                <CarCard key={car._id} car={car} />
+              ))}
+            </div>
+          )}
+
+          {/* Empty state */}
+          {!isLoading && cars.length === 0 && (
             <div className="text-center py-24">
               <div className="text-5xl mb-4">🚗</div>
               <h3 className="font-bold text-xl text-gray-700 mb-2">

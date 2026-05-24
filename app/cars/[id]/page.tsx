@@ -2,7 +2,9 @@
 import { use, useState } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { cars } from "@/lib/cars";
+import { useQuery } from "convex/react";
+import { api } from "@/convex/_generated/api";
+import { Id } from "@/convex/_generated/dataModel";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import {
@@ -29,10 +31,38 @@ export default function CarDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = use(params);
-  const car = cars.find((c) => c.id === id);
-  if (!car) notFound();
-
   const [activeImg, setActiveImg] = useState(0);
+
+  // Fetch car from Convex using the id from the URL
+  const car = useQuery(api.cars.getCarById, {
+    id: id as Id<"cars">,
+  });
+
+  // Still loading
+  if (car === undefined) {
+    return (
+      <>
+        <Navbar />
+        <main className="min-h-screen bg-gray-50 pt-5">
+          <div className="max-w-5xl mx-auto px-6 lg:px-10 py-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 animate-pulse">
+              <div className="aspect-[4/3] bg-gray-200 rounded-2xl" />
+              <div className="flex flex-col gap-4">
+                <div className="h-4 bg-gray-200 rounded w-1/3" />
+                <div className="h-8 bg-gray-200 rounded w-2/3" />
+                <div className="h-4 bg-gray-200 rounded w-full" />
+                <div className="h-4 bg-gray-200 rounded w-4/5" />
+              </div>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </>
+    );
+  }
+
+  // Not found
+  if (car === null) notFound();
 
   const prev = () =>
     setActiveImg((i) => (i === 0 ? car.images.length - 1 : i - 1));
@@ -45,13 +75,13 @@ export default function CarDetailPage({
     { icon: Fuel, label: "Fuel Type", value: car.fuelType },
     { icon: Settings2, label: "Transmission", value: car.transmission },
     { icon: Gauge, label: "Horsepower", value: `${car.horsepower} hp` },
-    { icon: Wind, label: "Top Speed", value: car.topSpeed },
-    { icon: Activity, label: "0–100 km/h", value: car.acceleration },
-    { icon: Zap, label: "Engine", value: car.engineSize },
+    { icon: Wind, label: "Top Speed", value: car.topSpeed ?? "N/A" },
+    { icon: Activity, label: "0–60 mph", value: car.acceleration ?? "N/A" },
+    { icon: Zap, label: "Engine", value: car.engineSize ?? "N/A" },
     { icon: Users, label: "Seats", value: `${car.seatingCapacity} seats` },
     { icon: DoorOpen, label: "Doors", value: `${car.doors} doors` },
-    { icon: Gauge, label: "Torque", value: car.torque },
-    { icon: Fuel, label: "Efficiency", value: car.fuelEfficiency },
+    { icon: Gauge, label: "Torque", value: car.torque ?? "N/A" },
+    { icon: Fuel, label: "Efficiency", value: car.fuelEfficiency ?? "N/A" },
     { icon: Calendar, label: "Year", value: String(car.year) },
     {
       icon: Tag,
@@ -62,6 +92,7 @@ export default function CarDetailPage({
 
   return (
     <>
+      <Navbar />
       <main className="min-h-screen bg-gray-50 pt-5">
         <div className="max-w-5xl mx-auto px-6 lg:px-10 py-10">
           {/* Back */}
@@ -106,9 +137,7 @@ export default function CarDetailPage({
                     <button
                       key={i}
                       onClick={() => setActiveImg(i)}
-                      className={`h-1.5 rounded-full transition-all duration-200 ${
-                        i === activeImg ? "w-5 bg-white" : "w-1.5 bg-white/40"
-                      }`}
+                      className={`h-1.5 rounded-full transition-all duration-200 ${i === activeImg ? "w-5 bg-white" : "w-1.5 bg-white/40"}`}
                     />
                   ))}
                 </div>
@@ -160,25 +189,29 @@ export default function CarDetailPage({
               </div>
 
               {/* Tags */}
-              <div className="flex flex-wrap gap-2">
-                {car.tags?.map((t) => (
-                  <span
-                    key={t}
-                    className="text-[11px] font-semibold px-3 py-1 rounded-full border"
-                    style={{
-                      background: "rgba(30,144,255,0.06)",
-                      borderColor: "rgba(30,144,255,0.25)",
-                      color: "#1E90FF",
-                    }}
-                  >
-                    {t}
-                  </span>
-                ))}
-              </div>
+              {car.tags && car.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {car.tags.map((t) => (
+                    <span
+                      key={t}
+                      className="text-[11px] font-semibold px-3 py-1 rounded-full border"
+                      style={{
+                        background: "rgba(30,144,255,0.06)",
+                        borderColor: "rgba(30,144,255,0.25)",
+                        color: "#1E90FF",
+                      }}
+                    >
+                      {t}
+                    </span>
+                  ))}
+                </div>
+              )}
 
-              <p className="text-sm text-gray-500 leading-relaxed">
-                {car.description}
-              </p>
+              {car.description && (
+                <p className="text-sm text-gray-500 leading-relaxed">
+                  {car.description}
+                </p>
+              )}
 
               {/* Pricing */}
               <div className="flex gap-3">
@@ -212,10 +245,10 @@ export default function CarDetailPage({
 
               {/* CTA */}
               <a
-                href={`https://wa.me/2348000000000?text=Hi%2C+I'm+interested+in+the+${encodeURIComponent(car.name)}`}
+                href={`https://wa.me/12125550000?text=Hi%2C+I'm+interested+in+the+${encodeURIComponent(car.name)}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 w-full py-4 text-white font-semibold rounded-2xl transition-colors text-sm"
+                className="flex items-center justify-center gap-2 w-full py-4 text-white font-semibold rounded-2xl text-sm"
                 style={{ background: "#1E90FF" }}
               >
                 <Phone size={16} />
@@ -258,26 +291,28 @@ export default function CarDetailPage({
           </div>
 
           {/* Features */}
-          <div className="mt-10">
-            <h2 className="text-xl font-black text-gray-900 mb-6">
-              Features & Equipment
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {car.features?.map((f) => (
-                <div
-                  key={f}
-                  className="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-4 py-3"
-                >
-                  <CheckCircle2
-                    size={15}
-                    className="shrink-0"
-                    style={{ color: "#1E90FF" }}
-                  />
-                  <span className="text-sm text-gray-700">{f}</span>
-                </div>
-              ))}
+          {car.features && car.features.length > 0 && (
+            <div className="mt-10">
+              <h2 className="text-xl font-black text-gray-900 mb-6">
+                Features & Equipment
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {car.features.map((f) => (
+                  <div
+                    key={f}
+                    className="flex items-center gap-3 bg-white border border-gray-100 rounded-xl px-4 py-3"
+                  >
+                    <CheckCircle2
+                      size={15}
+                      className="shrink-0"
+                      style={{ color: "#1E90FF" }}
+                    />
+                    <span className="text-sm text-gray-700">{f}</span>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Bottom CTA */}
           <div className="mt-14 bg-neutral-950 rounded-3xl px-8 py-10 flex flex-col sm:flex-row items-center justify-between gap-6">
@@ -290,10 +325,10 @@ export default function CarDetailPage({
               </p>
             </div>
             <a
-              href={`https://wa.me/2348000000000?text=Hi%2C+I'm+interested+in+the+${encodeURIComponent(car.name)}`}
+              href={`https://wa.me/12125550000?text=Hi%2C+I'm+interested+in+the+${encodeURIComponent(car.name)}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 flex items-center gap-2 px-7 py-3.5 text-white text-sm font-semibold rounded-full transition-colors"
+              className="shrink-0 flex items-center gap-2 px-7 py-3.5 text-white text-sm font-semibold rounded-full"
               style={{ background: "#1E90FF" }}
             >
               <Phone size={15} />
@@ -302,7 +337,6 @@ export default function CarDetailPage({
           </div>
         </div>
       </main>
-
       <Footer />
     </>
   );
