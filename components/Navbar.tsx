@@ -1,15 +1,20 @@
 "use client";
+
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X } from "lucide-react";
 import Image from "next/image";
-import { Show, SignUpButton } from "@clerk/nextjs";
+import { Show, SignUpButton, UserButton } from "@clerk/nextjs";
 import { Button } from "./ui/button";
+import { useIsAdmin } from "@/hooks/useIsAdmin";
+
+const WHATSAPP_URL = `https://wa.me/12125550000?text=Hi%2C%20I%27d%20like%20to%20inquire%20about%20a%20car.`;
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  const isAdmin = useIsAdmin();
 
   const links = [
     { href: "/", label: "Home" },
@@ -43,32 +48,29 @@ export default function Navbar() {
           </ul>
 
           {/* CTA */}
-          <div className="hidden md:flex items-center">
-            {/* <Link
-              href="/#contact"
-              className="px-5 py-2.5 text-white text-sm font-semibold rounded-full transition-all duration-200 hover:-translate-y-0.5"
-              style={{ background: "#1E90FF" }}
-              onMouseEnter={(e) =>
-                (e.currentTarget.style.background = "#1a7ee0")
-              }
-              onMouseLeave={(e) =>
-                (e.currentTarget.style.background = "#1E90FF")
-              }
-            >
-              Contact Us
-            </Link> */}
-
+          <div className="hidden md:flex items-center gap-4">
             <Show when="signed-out">
-              <SignUpButton>
+              <SignUpButton mode="modal">
                 <Button variant={"outline"}>Sign Up</Button>
               </SignUpButton>
             </Show>
-            <Show when="signed-in">
-              <Link href={"/admin"}>
-                <Button variant={"outline"}>Dashboard</Button>
-              </Link>
 
-              {/* <UserButton /> */}
+            <Show when="signed-in">
+              {isAdmin ? (
+                <Link href={"/admin"}>
+                  <Button variant={"outline"}>Dashboard</Button>
+                </Link>
+              ) : (
+                <a
+                  href={WHATSAPP_URL}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button variant={"outline"}>Contact Us</Button>
+                </a>
+              )}
+
+              <UserButton />
             </Show>
           </div>
 
@@ -103,6 +105,7 @@ export default function Navbar() {
           <X size={18} />
         </button>
 
+        {/* Mobile nav links */}
         <div
           className="rounded-2xl border border-white/10 overflow-hidden"
           style={{
@@ -128,26 +131,40 @@ export default function Navbar() {
           ))}
         </div>
 
-        {/* <Link
-          href="/#contact"
-          onClick={() => setOpen(false)}
-          className="py-3.5 text-center text-white text-sm font-semibold rounded-2xl"
-          style={{ background: "#1E90FF" }}
-        >
-          Contact Us
-        </Link> */}
-
+        {/* Mobile CTA */}
         <Show when="signed-out">
-          <SignUpButton>
-            <Button variant={"outline"}>Sign Up</Button>
+          <SignUpButton mode="modal">
+            <Button variant={"outline"} className="w-full">
+              Sign Up
+            </Button>
           </SignUpButton>
         </Show>
-        <Show when="signed-in">
-          <Link href={"/dashboard"}>
-            <Button variant={"outline"}>Dashboard</Button>
-          </Link>
 
-          {/* <UserButton /> */}
+        <Show when="signed-in">
+          <div className="flex flex-col gap-4">
+            {isAdmin ? (
+              <Link href={"/admin"} onClick={() => setOpen(false)}>
+                <Button variant={"outline"} className="w-full">
+                  Dashboard
+                </Button>
+              </Link>
+            ) : (
+              <a
+                href={WHATSAPP_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setOpen(false)}
+              >
+                <Button variant={"outline"} className="w-full">
+                  Contact Us
+                </Button>
+              </a>
+            )}
+
+            <div className="flex justify-center">
+              <UserButton />
+            </div>
+          </div>
         </Show>
       </div>
     </>

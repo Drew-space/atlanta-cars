@@ -1,14 +1,11 @@
 "use client";
 
 import { use, useState, useRef, useEffect } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { Id } from "@/convex/_generated/dataModel";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { carSchema, type CarFormValues } from "@/lib/car-schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +22,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ImagePlus, X, Loader2, Plus } from "lucide-react";
+
+type Availability = "Buy" | "Rent" | "Both";
+type Condition = "New" | "Used";
+type FuelType = "Petrol" | "Diesel" | "Electric" | "Hybrid";
+type Transmission = "Automatic" | "Manual";
 
 const CAR_TYPES = [
   "Sedan",
@@ -51,11 +53,6 @@ const SUGGESTED_TAGS = [
   "Hybrid",
 ];
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-[11px] text-destructive mt-1">{message}</p>;
-}
-
 export default function EditCarPage({
   params,
 }: {
@@ -68,59 +65,68 @@ export default function EditCarPage({
   const updateCar = useMutation(api.cars.updateCar);
   const generateUploadUrl = useMutation(api.cars.generateUploadUrl);
 
+  // ── Image state ──────────────────────────────────────────────────
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // existingImages = URLs already saved in DB (shown as thumbnails)
   const [existingImages, setExistingImages] = useState<string[]>([]);
+  // newFiles = files the admin picked to add
   const [newFiles, setNewFiles] = useState<File[]>([]);
   const [newPreviews, setNewPreviews] = useState<string[]>([]);
-  const [imageError, setImageError] = useState("");
+  const [uploading, setUploading] = useState(false);
+
+  // ── Tag / Feature state ──────────────────────────────────────────
   const [tags, setTags] = useState<string[]>([]);
   const [tagInput, setTagInput] = useState("");
   const [features, setFeatures] = useState<string[]>([]);
   const [featureInput, setFeatureInput] = useState("");
-  const [uploading, setUploading] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    reset,
-    formState: { errors },
-  } = useForm<CarFormValues>({
-    resolver: zodResolver(carSchema),
-    defaultValues: {
-      year: new Date().getFullYear(),
-      type: "Sedan",
-      condition: "New",
-      available: "Both",
-      fuelType: "Petrol",
-      transmission: "Automatic",
-      isPublished: true,
-      isFeatured: false,
-    },
+  // ── Form state ───────────────────────────────────────────────────
+  const [form, setForm] = useState({
+    name: "",
+    brand: "",
+    model: "",
+    year: new Date().getFullYear(),
+    type: "Sedan",
+    condition: "New" as Condition,
+    available: "Both" as Availability,
+    buyPrice: "",
+    rentPricePerDay: "",
+    fuelType: "Petrol" as FuelType,
+    transmission: "Automatic" as Transmission,
+    horsepower: "",
+    seatingCapacity: "",
+    mileage: "",
+    doors: "",
+    engineSize: "",
+    torque: "",
+    topSpeed: "",
+    acceleration: "",
+    fuelEfficiency: "",
+    color: "",
+    description: "",
+    isPublished: true,
+    isFeatured: false,
   });
 
-  const available = watch("available");
-
-  // Pre-fill once car loads
+  // ── Pre-fill form once car loads ─────────────────────────────────
   useEffect(() => {
     if (!car) return;
-    reset({
+    setForm({
       name: car.name,
       brand: car.brand,
       model: car.model,
       year: car.year,
-      type: car.type as CarFormValues["type"],
-      condition: car.condition as CarFormValues["condition"],
-      available: car.available as CarFormValues["available"],
-      buyPrice: car.buyPrice ?? undefined,
-      rentPricePerDay: car.rentPricePerDay ?? undefined,
-      fuelType: car.fuelType as CarFormValues["fuelType"],
-      transmission: car.transmission as CarFormValues["transmission"],
-      horsepower: car.horsepower,
-      seatingCapacity: car.seatingCapacity,
-      mileage: car.mileage,
-      doors: car.doors,
+      type: car.type,
+      condition: car.condition as Condition,
+      available: car.available as Availability,
+      buyPrice: car.buyPrice?.toString() ?? "",
+      rentPricePerDay: car.rentPricePerDay?.toString() ?? "",
+      fuelType: car.fuelType as FuelType,
+      transmission: car.transmission as Transmission,
+      horsepower: car.horsepower.toString(),
+      seatingCapacity: car.seatingCapacity.toString(),
+      mileage: car.mileage.toString(),
+      doors: car.doors.toString(),
       engineSize: car.engineSize ?? "",
       torque: car.torque ?? "",
       topSpeed: car.topSpeed ?? "",
@@ -134,34 +140,58 @@ export default function EditCarPage({
     setExistingImages(car.images ?? []);
     setTags(car.tags ?? []);
     setFeatures(car.features ?? []);
-  }, [car, reset]);
+  }, [car]);
+
+  // ── Helpers ──────────────────────────────────────────────────────
+  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function addTag(tag: string) {
+    const clean = tag.trim();
+    if (clean && !tags.includes(clean)) setTags((prev) => [...prev, clean]);
+    setTagInput("");
+  }
+  function removeTag(tag: string) {
+    setTags((prev) => prev.filter((t) => t !== tag));
+  }
+
+  function addFeature() {
+    const clean = featureInput.trim();
+    if (clean && !features.includes(clean))
+      setFeatures((prev) => [...prev, clean]);
+    setFeatureInput("");
+  }
+  function removeFeature(f: string) {
+    setFeatures((prev) => prev.filter((x) => x !== f));
+  }
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    setNewFiles((p) => [...p, ...files]);
-    setNewPreviews((p) => [...p, ...files.map((f) => URL.createObjectURL(f))]);
-    setImageError("");
+    setNewFiles((prev) => [...prev, ...files]);
+    setNewPreviews((prev) => [
+      ...prev,
+      ...files.map((f) => URL.createObjectURL(f)),
+    ]);
     e.target.value = "";
   }
 
-  function addTag(tag: string) {
-    const t = tag.trim();
-    if (t && !tags.includes(t)) setTags((p) => [...p, t]);
-    setTagInput("");
+  function removeExisting(index: number) {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function addFeature() {
-    const f = featureInput.trim();
-    if (f && !features.includes(f)) setFeatures((p) => [...p, f]);
-    setFeatureInput("");
+  function removeNew(index: number) {
+    setNewFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewPreviews((prev) => prev.filter((_, i) => i !== index));
   }
 
+  // ── Upload new files to Convex Storage ───────────────────────────
   async function uploadNewImages(): Promise<string[]> {
     const ids: string[] = [];
     for (const file of newFiles) {
-      const url = await generateUploadUrl();
-      const res = await fetch(url, {
+      const uploadUrl = await generateUploadUrl();
+      const res = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": file.type },
         body: file,
@@ -173,24 +203,55 @@ export default function EditCarPage({
     return ids;
   }
 
-  async function onSubmit(data: CarFormValues) {
-    const total = existingImages.length + newFiles.length;
-    if (total === 0) {
-      setImageError("At least one image is required");
+  // ── Submit ───────────────────────────────────────────────────────
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    const totalImages = existingImages.length + newFiles.length;
+    if (totalImages === 0) {
+      toast.error("At least one image is required");
       return;
     }
 
     try {
       setUploading(true);
-      const newIds = await uploadNewImages();
-      const allImages = [...existingImages, ...newIds];
+      const newStorageIds = await uploadNewImages();
+
+      // existingImages are already resolved URLs from the DB
+      // newStorageIds are raw storageIds — the query will resolve them on next fetch
+      const allImages = [...existingImages, ...newStorageIds];
 
       await updateCar({
         id: id as Id<"cars">,
-        ...data,
+        name: form.name,
+        brand: form.brand,
+        model: form.model,
+        year: Number(form.year),
+        type: form.type,
+        condition: form.condition,
+        available: form.available,
+        buyPrice: form.buyPrice ? Number(form.buyPrice) : undefined,
+        rentPricePerDay: form.rentPricePerDay
+          ? Number(form.rentPricePerDay)
+          : undefined,
         images: allImages,
+        fuelType: form.fuelType,
+        transmission: form.transmission,
+        horsepower: Number(form.horsepower),
+        seatingCapacity: Number(form.seatingCapacity),
+        mileage: Number(form.mileage),
+        doors: Number(form.doors),
+        engineSize: form.engineSize || undefined,
+        torque: form.torque || undefined,
+        topSpeed: form.topSpeed || undefined,
+        acceleration: form.acceleration || undefined,
+        fuelEfficiency: form.fuelEfficiency || undefined,
+        color: form.color || undefined,
         tags: tags.length ? tags : undefined,
+        description: form.description || undefined,
         features: features.length ? features : undefined,
+        isPublished: form.isPublished,
+        isFeatured: form.isFeatured,
       });
 
       toast.success("Car updated successfully!");
@@ -202,6 +263,7 @@ export default function EditCarPage({
     }
   }
 
+  // ── Loading state ────────────────────────────────────────────────
   if (car === undefined) {
     return (
       <div className="flex flex-1 items-center justify-center p-8">
@@ -209,6 +271,7 @@ export default function EditCarPage({
       </div>
     );
   }
+
   if (car === null) {
     return (
       <div className="flex flex-1 items-center justify-center p-8">
@@ -217,27 +280,29 @@ export default function EditCarPage({
     );
   }
 
+  // ── Render ───────────────────────────────────────────────────────
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 max-w-4xl mx-auto w-full">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-        {/* Images */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        {/* ── Images ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">Car Images</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Remove existing or add new ones. First image is the cover.
+              Remove existing images or add new ones. First image is the cover.
             </p>
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-3">
+              {/* Existing images from DB */}
               {existingImages.map((src, i) => (
                 <div
-                  key={`e-${i}`}
+                  key={`existing-${i}`}
                   className="relative w-28 h-20 rounded-xl overflow-hidden border"
                 >
                   <img
                     src={src}
-                    alt=""
+                    alt={`existing ${i}`}
                     className="w-full h-full object-cover"
                   />
                   {i === 0 && (
@@ -247,23 +312,23 @@ export default function EditCarPage({
                   )}
                   <button
                     type="button"
-                    onClick={() =>
-                      setExistingImages((p) => p.filter((_, idx) => idx !== i))
-                    }
+                    onClick={() => removeExisting(i)}
                     className="absolute top-1 right-1 w-5 h-5 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </div>
               ))}
+
+              {/* New image previews */}
               {newPreviews.map((src, i) => (
                 <div
-                  key={`n-${i}`}
+                  key={`new-${i}`}
                   className="relative w-28 h-20 rounded-xl overflow-hidden border border-blue-300"
                 >
                   <img
                     src={src}
-                    alt=""
+                    alt={`new ${i}`}
                     className="w-full h-full object-cover"
                   />
                   <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-blue-500 text-white px-1.5 py-0.5 rounded-full">
@@ -271,16 +336,15 @@ export default function EditCarPage({
                   </span>
                   <button
                     type="button"
-                    onClick={() => {
-                      setNewFiles((p) => p.filter((_, idx) => idx !== i));
-                      setNewPreviews((p) => p.filter((_, idx) => idx !== i));
-                    }}
+                    onClick={() => removeNew(i)}
                     className="absolute top-1 right-1 w-5 h-5 bg-black/60 hover:bg-black/80 text-white rounded-full flex items-center justify-center"
                   >
                     <X className="w-3 h-3" />
                   </button>
                 </div>
               ))}
+
+              {/* Add more */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -289,6 +353,7 @@ export default function EditCarPage({
                 <ImagePlus className="w-5 h-5" />
                 <span className="text-[10px]">Add image</span>
               </button>
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -298,13 +363,10 @@ export default function EditCarPage({
                 onChange={handleImageSelect}
               />
             </div>
-            {imageError && (
-              <p className="text-[11px] text-destructive mt-2">{imageError}</p>
-            )}
           </CardContent>
         </Card>
 
-        {/* Core Details */}
+        {/* ── Core Details ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">Core Details</CardTitle>
@@ -312,135 +374,139 @@ export default function EditCarPage({
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Car Name *</Label>
-              <Input {...register("name")} className="h-9 text-sm" />
-              <FieldError message={errors.name?.message} />
+              <Input
+                value={form.name}
+                onChange={(e) => set("name", e.target.value)}
+                required
+                className="h-9 text-sm"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Brand *</Label>
-              <Input {...register("brand")} className="h-9 text-sm" />
-              <FieldError message={errors.brand?.message} />
+              <Input
+                value={form.brand}
+                onChange={(e) => set("brand", e.target.value)}
+                required
+                className="h-9 text-sm"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Model *</Label>
-              <Input {...register("model")} className="h-9 text-sm" />
-              <FieldError message={errors.model?.message} />
+              <Input
+                value={form.model}
+                onChange={(e) => set("model", e.target.value)}
+                required
+                className="h-9 text-sm"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Year *</Label>
               <Input
-                {...register("year")}
                 type="number"
+                min={1900}
+                max={2030}
+                value={form.year}
+                onChange={(e) => set("year", Number(e.target.value))}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.year?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Type *</Label>
-              <Controller
-                name="type"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CAR_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.type?.message} />
+              <Select value={form.type} onValueChange={(v) => set("type", v)}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CAR_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Color</Label>
-              <Input {...register("color")} className="h-9 text-sm" />
+              <Input
+                value={form.color}
+                onChange={(e) => set("color", e.target.value)}
+                className="h-9 text-sm"
+              />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Condition *</Label>
-              <Controller
-                name="condition"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONDITIONS.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.condition?.message} />
+              <Select
+                value={form.condition}
+                onValueChange={(v) => set("condition", v as Condition)}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONDITIONS.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Availability *</Label>
-              <Controller
-                name="available"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AVAILABILITY.map((a) => (
-                        <SelectItem key={a} value={a}>
-                          {a}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.available?.message} />
+              <Select
+                value={form.available}
+                onValueChange={(v) => set("available", v as Availability)}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {AVAILABILITY.map((a) => (
+                    <SelectItem key={a} value={a}>
+                      {a}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* Pricing */}
+        {/* ── Pricing ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">Pricing (USD)</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {available !== "Rent" && (
+            {form.available !== "Rent" && (
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">Buy Price ($)</Label>
                 <Input
-                  {...register("buyPrice")}
                   type="number"
                   min={0}
+                  value={form.buyPrice}
+                  onChange={(e) => set("buyPrice", e.target.value)}
                   className="h-9 text-sm"
                 />
-                <FieldError message={errors.buyPrice?.message} />
               </div>
             )}
-            {available !== "Buy" && (
+            {form.available !== "Buy" && (
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">Rent Price per Day ($)</Label>
                 <Input
-                  {...register("rentPricePerDay")}
                   type="number"
                   min={0}
+                  value={form.rentPricePerDay}
+                  onChange={(e) => set("rentPricePerDay", e.target.value)}
                   className="h-9 text-sm"
                 />
-                <FieldError message={errors.rentPricePerDay?.message} />
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Key Specs */}
+        {/* ── Key Specs ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -450,94 +516,90 @@ export default function EditCarPage({
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Fuel Type *</Label>
-              <Controller
-                name="fuelType"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FUEL_TYPES.map((f) => (
-                        <SelectItem key={f} value={f}>
-                          {f}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.fuelType?.message} />
+              <Select
+                value={form.fuelType}
+                onValueChange={(v) => set("fuelType", v as FuelType)}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FUEL_TYPES.map((f) => (
+                    <SelectItem key={f} value={f}>
+                      {f}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Transmission *</Label>
-              <Controller
-                name="transmission"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TRANSMISSIONS.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.transmission?.message} />
+              <Select
+                value={form.transmission}
+                onValueChange={(v) => set("transmission", v as Transmission)}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRANSMISSIONS.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Horsepower (hp) *</Label>
               <Input
-                {...register("horsepower")}
                 type="number"
                 min={0}
+                value={form.horsepower}
+                onChange={(e) => set("horsepower", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.horsepower?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Seating Capacity *</Label>
               <Input
-                {...register("seatingCapacity")}
                 type="number"
                 min={1}
                 max={20}
+                value={form.seatingCapacity}
+                onChange={(e) => set("seatingCapacity", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.seatingCapacity?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Mileage (mi) *</Label>
               <Input
-                {...register("mileage")}
                 type="number"
                 min={0}
+                value={form.mileage}
+                onChange={(e) => set("mileage", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.mileage?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Doors *</Label>
               <Input
-                {...register("doors")}
                 type="number"
                 min={1}
                 max={6}
+                value={form.doors}
+                onChange={(e) => set("doors", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.doors?.message} />
             </div>
           </CardContent>
         </Card>
 
-        {/* Extended Specs */}
+        {/* ── Extended Specs ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -551,47 +613,52 @@ export default function EditCarPage({
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Engine Size</Label>
               <Input
-                {...register("engineSize")}
                 placeholder="e.g. 3.5L V6"
+                value={form.engineSize}
+                onChange={(e) => set("engineSize", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Torque</Label>
               <Input
-                {...register("torque")}
                 placeholder="e.g. 450 Nm"
+                value={form.torque}
+                onChange={(e) => set("torque", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Top Speed</Label>
               <Input
-                {...register("topSpeed")}
                 placeholder="e.g. 250 mph"
+                value={form.topSpeed}
+                onChange={(e) => set("topSpeed", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">0–60 mph</Label>
               <Input
-                {...register("acceleration")}
                 placeholder="e.g. 0-60 mph in 4.2s"
+                value={form.acceleration}
+                onChange={(e) => set("acceleration", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1.5 sm:col-span-2">
               <Label className="text-xs">Fuel Efficiency</Label>
               <Input
-                {...register("fuelEfficiency")}
                 placeholder="e.g. 30 MPG"
+                value={form.fuelEfficiency}
+                onChange={(e) => set("fuelEfficiency", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Tags */}
+        {/* ── Tags ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -659,10 +726,7 @@ export default function EditCarPage({
                     className="text-xs gap-1 pr-1"
                   >
                     {t}
-                    <button
-                      type="button"
-                      onClick={() => setTags((p) => p.filter((x) => x !== t))}
-                    >
+                    <button type="button" onClick={() => removeTag(t)}>
                       <X className="w-3 h-3" />
                     </button>
                   </Badge>
@@ -672,7 +736,7 @@ export default function EditCarPage({
           </CardContent>
         </Card>
 
-        {/* Features */}
+        {/* ── Features ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -716,9 +780,7 @@ export default function EditCarPage({
                     <span>{f}</span>
                     <button
                       type="button"
-                      onClick={() =>
-                        setFeatures((p) => p.filter((x) => x !== f))
-                      }
+                      onClick={() => removeFeature(f)}
                       className="text-muted-foreground hover:text-destructive"
                     >
                       <X className="w-3 h-3" />
@@ -730,7 +792,7 @@ export default function EditCarPage({
           </CardContent>
         </Card>
 
-        {/* Description */}
+        {/* ── Description ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -742,15 +804,16 @@ export default function EditCarPage({
           </CardHeader>
           <CardContent>
             <Textarea
-              {...register("description")}
               placeholder="Write a short description..."
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
               rows={4}
               className="text-sm resize-none"
             />
           </CardContent>
         </Card>
 
-        {/* Publish Settings */}
+        {/* ── Publish Settings ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -765,15 +828,9 @@ export default function EditCarPage({
                   Make this car visible on the public site
                 </p>
               </div>
-              <Controller
-                name="isPublished"
-                control={control}
-                render={({ field }) => (
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                )}
+              <Switch
+                checked={form.isPublished}
+                onCheckedChange={(v) => set("isPublished", v)}
               />
             </div>
             <Separator />
@@ -784,21 +841,15 @@ export default function EditCarPage({
                   Show on the homepage featured section
                 </p>
               </div>
-              <Controller
-                name="isFeatured"
-                control={control}
-                render={({ field }) => (
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                )}
+              <Switch
+                checked={form.isFeatured}
+                onCheckedChange={(v) => set("isFeatured", v)}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Submit */}
+        {/* ── Submit ── */}
         <div className="flex gap-3 pb-8">
           <Button
             type="button"

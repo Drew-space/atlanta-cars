@@ -1,14 +1,11 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { useForm, Controller } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
 import { useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
-import { carSchema, type CarFormValues } from "@/lib/car-schema";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,6 +22,12 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { ImagePlus, X, Loader2, Plus } from "lucide-react";
+
+// ── Types ────────────────────────────────────────────────────────────
+type Availability = "Buy" | "Rent" | "Both";
+type Condition = "New" | "Used";
+type FuelType = "Petrol" | "Diesel" | "Electric" | "Hybrid";
+type Transmission = "Automatic" | "Manual";
 
 const CAR_TYPES = [
   "Sedan",
@@ -51,109 +54,171 @@ const SUGGESTED_TAGS = [
   "Hybrid",
 ];
 
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="text-[11px] text-destructive mt-1">{message}</p>;
-}
-
 export default function UploadCarPage() {
   const router = useRouter();
   const { user } = useUser();
+
   const createCar = useMutation(api.cars.createCar);
   const generateUploadUrl = useMutation(api.cars.generateUploadUrl);
 
+  // ── Image state ──────────────────────────────────────────────────
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [imageError, setImageError] = useState("");
-  const [tags, setTags] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState("");
-  const [features, setFeatures] = useState<string[]>([]);
-  const [featureInput, setFeatureInput] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  const {
-    register,
-    handleSubmit,
-    control,
-    watch,
-    formState: { errors },
-  } = useForm<CarFormValues>({
-    resolver: zodResolver(carSchema),
-    defaultValues: {
-      year: new Date().getFullYear(),
-      type: "Sedan",
-      condition: "New",
-      available: "Both",
-      fuelType: "Petrol",
-      transmission: "Automatic",
-      isPublished: true,
-      isFeatured: false,
-    },
+  // ── Tag state ────────────────────────────────────────────────────
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+
+  // ── Feature state ────────────────────────────────────────────────
+  const [features, setFeatures] = useState<string[]>([]);
+  const [featureInput, setFeatureInput] = useState("");
+
+  // ── Form state ───────────────────────────────────────────────────
+  const [form, setForm] = useState({
+    name: "",
+    brand: "",
+    model: "",
+    year: new Date().getFullYear(),
+    type: "Sedan",
+    condition: "New" as Condition,
+    available: "Both" as Availability,
+    buyPrice: "",
+    rentPricePerDay: "",
+    fuelType: "Petrol" as FuelType,
+    transmission: "Automatic" as Transmission,
+    horsepower: "",
+    seatingCapacity: "",
+    mileage: "",
+    doors: "",
+    engineSize: "",
+    torque: "",
+    topSpeed: "",
+    acceleration: "",
+    fuelEfficiency: "",
+    color: "",
+    description: "",
+    isPublished: true,
+    isFeatured: false,
   });
 
-  const available = watch("available");
+  // ── Helpers ──────────────────────────────────────────────────────
+  function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function addTag(tag: string) {
+    const clean = tag.trim();
+    if (clean && !tags.includes(clean)) setTags((prev) => [...prev, clean]);
+    setTagInput("");
+  }
+
+  function removeTag(tag: string) {
+    setTags((prev) => prev.filter((t) => t !== tag));
+  }
+
+  function addFeature() {
+    const clean = featureInput.trim();
+    if (clean && !features.includes(clean))
+      setFeatures((prev) => [...prev, clean]);
+    setFeatureInput("");
+  }
+
+  function removeFeature(f: string) {
+    setFeatures((prev) => prev.filter((x) => x !== f));
+  }
 
   function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (!files.length) return;
-    setImageFiles((p) => [...p, ...files]);
-    setImagePreviews((p) => [
-      ...p,
-      ...files.map((f) => URL.createObjectURL(f)),
-    ]);
-    setImageError("");
+    const newPreviews = files.map((f) => URL.createObjectURL(f));
+    setImageFiles((prev) => [...prev, ...files]);
+    setImagePreviews((prev) => [...prev, ...newPreviews]);
     e.target.value = "";
   }
 
-  function removeImage(i: number) {
-    setImageFiles((p) => p.filter((_, idx) => idx !== i));
-    setImagePreviews((p) => p.filter((_, idx) => idx !== i));
+  function removeImage(index: number) {
+    setImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index));
   }
 
-  function addTag(tag: string) {
-    const t = tag.trim();
-    if (t && !tags.includes(t)) setTags((p) => [...p, t]);
-    setTagInput("");
-  }
-
-  function addFeature() {
-    const f = featureInput.trim();
-    if (f && !features.includes(f)) setFeatures((p) => [...p, f]);
-    setFeatureInput("");
-  }
-
+  // ── Upload images to Convex Storage ──────────────────────────────
   async function uploadImages(): Promise<string[]> {
-    const ids: string[] = [];
+    const urls: string[] = [];
     for (const file of imageFiles) {
-      const url = await generateUploadUrl();
-      const res = await fetch(url, {
+      const uploadUrl = await generateUploadUrl();
+      const res = await fetch(uploadUrl, {
         method: "POST",
         headers: { "Content-Type": file.type },
         body: file,
       });
       if (!res.ok) throw new Error("Image upload failed");
       const { storageId } = await res.json();
-      ids.push(storageId);
+      // Get the public URL from the storage ID
+      urls.push(storageId);
     }
-    return ids;
+    return urls;
   }
 
-  async function onSubmit(data: CarFormValues) {
+  // ── Submit ───────────────────────────────────────────────────────
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
     if (imageFiles.length === 0) {
-      setImageError("Please upload at least one image");
+      toast.error("Please upload at least one image");
       return;
     }
+    if (!form.name || !form.brand || !form.model) {
+      toast.error("Name, brand and model are required");
+      return;
+    }
+    if (form.available !== "Rent" && !form.buyPrice) {
+      toast.error("Buy price is required for Buy or Both availability");
+      return;
+    }
+    if (form.available !== "Buy" && !form.rentPricePerDay) {
+      toast.error("Rent price is required for Rent or Both availability");
+      return;
+    }
+
     try {
       setUploading(true);
-      const imageIds = await uploadImages();
+      const imageUrls = await uploadImages();
+
       await createCar({
-        ...data,
-        images: imageIds,
+        name: form.name,
+        brand: form.brand,
+        model: form.model,
+        year: Number(form.year),
+        type: form.type,
+        condition: form.condition,
+        available: form.available,
+        buyPrice: form.buyPrice ? Number(form.buyPrice) : undefined,
+        rentPricePerDay: form.rentPricePerDay
+          ? Number(form.rentPricePerDay)
+          : undefined,
+        images: imageUrls,
+        fuelType: form.fuelType,
+        transmission: form.transmission,
+        horsepower: Number(form.horsepower),
+        seatingCapacity: Number(form.seatingCapacity),
+        mileage: Number(form.mileage),
+        doors: Number(form.doors),
+        engineSize: form.engineSize || undefined,
+        torque: form.torque || undefined,
+        topSpeed: form.topSpeed || undefined,
+        acceleration: form.acceleration || undefined,
+        fuelEfficiency: form.fuelEfficiency || undefined,
+        color: form.color || undefined,
         tags: tags.length ? tags : undefined,
+        description: form.description || undefined,
         features: features.length ? features : undefined,
+        isPublished: form.isPublished,
+        isFeatured: form.isFeatured,
         postedBy: user?.id,
       });
+
       toast.success("Car uploaded successfully!");
       router.push("/admin");
     } catch (err) {
@@ -163,15 +228,16 @@ export default function UploadCarPage() {
     }
   }
 
+  // ── Render ───────────────────────────────────────────────────────
   return (
     <div className="flex flex-1 flex-col gap-6 p-4 max-w-4xl mx-auto w-full">
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-6">
-        {/* Images */}
+      <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        {/* ── Images ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">Car Images</CardTitle>
             <p className="text-xs text-muted-foreground">
-              Upload multiple images. First image is the cover.
+              Upload multiple images. First image will be used as the cover.
             </p>
           </CardHeader>
           <CardContent>
@@ -183,7 +249,7 @@ export default function UploadCarPage() {
                 >
                   <img
                     src={src}
-                    alt=""
+                    alt={`preview ${i}`}
                     className="w-full h-full object-cover"
                   />
                   {i === 0 && (
@@ -200,6 +266,8 @@ export default function UploadCarPage() {
                   </button>
                 </div>
               ))}
+
+              {/* Add image button */}
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
@@ -208,6 +276,7 @@ export default function UploadCarPage() {
                 <ImagePlus className="w-5 h-5" />
                 <span className="text-[10px]">Add image</span>
               </button>
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -217,13 +286,10 @@ export default function UploadCarPage() {
                 onChange={handleImageSelect}
               />
             </div>
-            {imageError && (
-              <p className="text-[11px] text-destructive mt-2">{imageError}</p>
-            )}
           </CardContent>
         </Card>
 
-        {/* Core Details */}
+        {/* ── Core Identity ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">Core Details</CardTitle>
@@ -232,154 +298,144 @@ export default function UploadCarPage() {
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Car Name *</Label>
               <Input
-                {...register("name")}
                 placeholder="e.g. BMW 5 Series"
+                value={form.name}
+                onChange={(e) => set("name", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.name?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Brand *</Label>
               <Input
-                {...register("brand")}
                 placeholder="e.g. BMW"
+                value={form.brand}
+                onChange={(e) => set("brand", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.brand?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Model *</Label>
               <Input
-                {...register("model")}
                 placeholder="e.g. 530i"
+                value={form.model}
+                onChange={(e) => set("model", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.model?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Year *</Label>
               <Input
-                {...register("year")}
                 type="number"
                 min={1900}
                 max={2030}
+                value={form.year}
+                onChange={(e) => set("year", Number(e.target.value))}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.year?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Type *</Label>
-              <Controller
-                name="type"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CAR_TYPES.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.type?.message} />
+              <Select value={form.type} onValueChange={(v) => set("type", v)}>
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CAR_TYPES.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Color</Label>
               <Input
-                {...register("color")}
                 placeholder="e.g. Alpine White"
+                value={form.color}
+                onChange={(e) => set("color", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Condition *</Label>
-              <Controller
-                name="condition"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {CONDITIONS.map((c) => (
-                        <SelectItem key={c} value={c}>
-                          {c}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.condition?.message} />
+              <Select
+                value={form.condition}
+                onValueChange={(v) => set("condition", v as Condition)}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CONDITIONS.map((c) => (
+                    <SelectItem key={c} value={c}>
+                      {c}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Availability *</Label>
-              <Controller
-                name="available"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {AVAILABILITY.map((a) => (
-                        <SelectItem key={a} value={a}>
-                          {a}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.available?.message} />
+              <Select
+                value={form.available}
+                onValueChange={(v) => set("available", v as Availability)}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {AVAILABILITY.map((a) => (
+                    <SelectItem key={a} value={a}>
+                      {a}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
 
-        {/* Pricing */}
+        {/* ── Pricing ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">Pricing (USD)</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {available !== "Rent" && (
+            {form.available !== "Rent" && (
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">Buy Price ($) *</Label>
                 <Input
-                  {...register("buyPrice")}
                   type="number"
                   min={0}
                   placeholder="e.g. 42000"
+                  value={form.buyPrice}
+                  onChange={(e) => set("buyPrice", e.target.value)}
                   className="h-9 text-sm"
                 />
-                <FieldError message={errors.buyPrice?.message} />
               </div>
             )}
-            {available !== "Buy" && (
+            {form.available !== "Buy" && (
               <div className="flex flex-col gap-1.5">
                 <Label className="text-xs">Rent Price per Day ($) *</Label>
                 <Input
-                  {...register("rentPricePerDay")}
                   type="number"
                   min={0}
                   placeholder="e.g. 450"
+                  value={form.rentPricePerDay}
+                  onChange={(e) => set("rentPricePerDay", e.target.value)}
                   className="h-9 text-sm"
                 />
-                <FieldError message={errors.rentPricePerDay?.message} />
               </div>
             )}
           </CardContent>
         </Card>
 
-        {/* Key Specs */}
+        {/* ── Key Specs ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -389,98 +445,94 @@ export default function UploadCarPage() {
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Fuel Type *</Label>
-              <Controller
-                name="fuelType"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {FUEL_TYPES.map((f) => (
-                        <SelectItem key={f} value={f}>
-                          {f}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.fuelType?.message} />
+              <Select
+                value={form.fuelType}
+                onValueChange={(v) => set("fuelType", v as FuelType)}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {FUEL_TYPES.map((f) => (
+                    <SelectItem key={f} value={f}>
+                      {f}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Transmission *</Label>
-              <Controller
-                name="transmission"
-                control={control}
-                render={({ field }) => (
-                  <Select value={field.value} onValueChange={field.onChange}>
-                    <SelectTrigger className="h-9 text-sm">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TRANSMISSIONS.map((t) => (
-                        <SelectItem key={t} value={t}>
-                          {t}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
-              <FieldError message={errors.transmission?.message} />
+              <Select
+                value={form.transmission}
+                onValueChange={(v) => set("transmission", v as Transmission)}
+              >
+                <SelectTrigger className="h-9 text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {TRANSMISSIONS.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Horsepower (hp) *</Label>
               <Input
-                {...register("horsepower")}
                 type="number"
                 min={0}
                 placeholder="e.g. 248"
+                value={form.horsepower}
+                onChange={(e) => set("horsepower", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.horsepower?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Seating Capacity *</Label>
               <Input
-                {...register("seatingCapacity")}
                 type="number"
                 min={1}
                 max={20}
                 placeholder="e.g. 5"
+                value={form.seatingCapacity}
+                onChange={(e) => set("seatingCapacity", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.seatingCapacity?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Mileage (mi) *</Label>
               <Input
-                {...register("mileage")}
                 type="number"
                 min={0}
                 placeholder="0 for new cars"
+                value={form.mileage}
+                onChange={(e) => set("mileage", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.mileage?.message} />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Doors *</Label>
               <Input
-                {...register("doors")}
                 type="number"
                 min={1}
                 max={6}
                 placeholder="e.g. 4"
+                value={form.doors}
+                onChange={(e) => set("doors", e.target.value)}
+                required
                 className="h-9 text-sm"
               />
-              <FieldError message={errors.doors?.message} />
             </div>
           </CardContent>
         </Card>
 
-        {/* Extended Specs */}
+        {/* ── Extended Specs (optional) ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -494,47 +546,52 @@ export default function UploadCarPage() {
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Engine Size</Label>
               <Input
-                {...register("engineSize")}
                 placeholder="e.g. 3.5L V6"
+                value={form.engineSize}
+                onChange={(e) => set("engineSize", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Torque</Label>
               <Input
-                {...register("torque")}
                 placeholder="e.g. 450 Nm"
+                value={form.torque}
+                onChange={(e) => set("torque", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">Top Speed</Label>
               <Input
-                {...register("topSpeed")}
                 placeholder="e.g. 250 mph"
+                value={form.topSpeed}
+                onChange={(e) => set("topSpeed", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <Label className="text-xs">0–60 mph</Label>
               <Input
-                {...register("acceleration")}
                 placeholder="e.g. 0-60 mph in 4.2s"
+                value={form.acceleration}
+                onChange={(e) => set("acceleration", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
             <div className="flex flex-col gap-1.5 sm:col-span-2">
               <Label className="text-xs">Fuel Efficiency</Label>
               <Input
-                {...register("fuelEfficiency")}
                 placeholder="e.g. 30 MPG"
+                value={form.fuelEfficiency}
+                onChange={(e) => set("fuelEfficiency", e.target.value)}
                 className="h-9 text-sm"
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Tags */}
+        {/* ── Tags ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -545,6 +602,7 @@ export default function UploadCarPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
+            {/* Suggested tags */}
             <div className="flex flex-wrap gap-2">
               {SUGGESTED_TAGS.map((t) => (
                 <button
@@ -570,6 +628,8 @@ export default function UploadCarPage() {
                 </button>
               ))}
             </div>
+
+            {/* Custom tag input */}
             <div className="flex gap-2">
               <Input
                 placeholder="Add custom tag..."
@@ -587,12 +647,14 @@ export default function UploadCarPage() {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-8"
+                className="h-8 text-xs"
                 onClick={() => addTag(tagInput)}
               >
                 <Plus className="w-3 h-3" />
               </Button>
             </div>
+
+            {/* Active tags */}
             {tags.length > 0 && (
               <div className="flex flex-wrap gap-2">
                 {tags.map((t) => (
@@ -602,10 +664,7 @@ export default function UploadCarPage() {
                     className="text-xs gap-1 pr-1"
                   >
                     {t}
-                    <button
-                      type="button"
-                      onClick={() => setTags((p) => p.filter((x) => x !== t))}
-                    >
+                    <button type="button" onClick={() => removeTag(t)}>
                       <X className="w-3 h-3" />
                     </button>
                   </Badge>
@@ -615,7 +674,7 @@ export default function UploadCarPage() {
           </CardContent>
         </Card>
 
-        {/* Features */}
+        {/* ── Features ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -643,7 +702,7 @@ export default function UploadCarPage() {
                 type="button"
                 size="sm"
                 variant="outline"
-                className="h-8"
+                className="h-8 text-xs"
                 onClick={addFeature}
               >
                 <Plus className="w-3 h-3" />
@@ -659,9 +718,7 @@ export default function UploadCarPage() {
                     <span>{f}</span>
                     <button
                       type="button"
-                      onClick={() =>
-                        setFeatures((p) => p.filter((x) => x !== f))
-                      }
+                      onClick={() => removeFeature(f)}
                       className="text-muted-foreground hover:text-destructive"
                     >
                       <X className="w-3 h-3" />
@@ -673,7 +730,7 @@ export default function UploadCarPage() {
           </CardContent>
         </Card>
 
-        {/* Description */}
+        {/* ── Description ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -685,15 +742,16 @@ export default function UploadCarPage() {
           </CardHeader>
           <CardContent>
             <Textarea
-              {...register("description")}
               placeholder="Write a short description of the car..."
+              value={form.description}
+              onChange={(e) => set("description", e.target.value)}
               rows={4}
               className="text-sm resize-none"
             />
           </CardContent>
         </Card>
 
-        {/* Publish Settings */}
+        {/* ── Publish settings ── */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium">
@@ -708,15 +766,9 @@ export default function UploadCarPage() {
                   Make this car visible on the public site
                 </p>
               </div>
-              <Controller
-                name="isPublished"
-                control={control}
-                render={({ field }) => (
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                )}
+              <Switch
+                checked={form.isPublished}
+                onCheckedChange={(v) => set("isPublished", v)}
               />
             </div>
             <Separator />
@@ -727,21 +779,15 @@ export default function UploadCarPage() {
                   Show on the homepage featured section
                 </p>
               </div>
-              <Controller
-                name="isFeatured"
-                control={control}
-                render={({ field }) => (
-                  <Switch
-                    checked={field.value}
-                    onCheckedChange={field.onChange}
-                  />
-                )}
+              <Switch
+                checked={form.isFeatured}
+                onCheckedChange={(v) => set("isFeatured", v)}
               />
             </div>
           </CardContent>
         </Card>
 
-        {/* Submit */}
+        {/* ── Submit ── */}
         <div className="flex gap-3 pb-8">
           <Button
             type="button"
