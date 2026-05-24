@@ -7,8 +7,8 @@ export const carSchema = z
     name: z.string().min(2, "Car name must be at least 2 characters"),
     brand: z.string().min(1, "Brand is required"),
     model: z.string().min(1, "Model is required"),
-    year: z.coerce
-      .number()
+    year: z
+      .number({ coerce: true })
       .min(1900, "Year must be 1900 or later")
       .max(2030, "Year can't exceed 2030"),
     type: z.enum(
@@ -35,12 +35,12 @@ export const carSchema = z
     color: z.string().optional(),
 
     // ── Pricing ───────────────────────────────────────────────────
-    buyPrice: z.coerce
-      .number()
+    buyPrice: z
+      .number({ coerce: true })
       .positive("Buy price must be positive")
       .optional(),
-    rentPricePerDay: z.coerce
-      .number()
+    rentPricePerDay: z
+      .number({ coerce: true })
       .positive("Rent price must be positive")
       .optional(),
 
@@ -51,14 +51,16 @@ export const carSchema = z
     transmission: z.enum(["Automatic", "Manual"], {
       required_error: "Transmission is required",
     }),
-    horsepower: z.coerce.number().min(1, "Horsepower must be at least 1"),
-    seatingCapacity: z.coerce
-      .number()
+    horsepower: z
+      .number({ coerce: true })
+      .min(1, "Horsepower must be at least 1"),
+    seatingCapacity: z
+      .number({ coerce: true })
       .min(1, "At least 1 seat required")
       .max(20, "Max 20 seats"),
-    mileage: z.coerce.number().min(0, "Mileage can't be negative"),
-    doors: z.coerce
-      .number()
+    mileage: z.number({ coerce: true }).min(0, "Mileage can't be negative"),
+    doors: z
+      .number({ coerce: true })
       .min(1, "At least 1 door required")
       .max(6, "Max 6 doors"),
 

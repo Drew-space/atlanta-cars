@@ -1,14 +1,30 @@
-import { clerkMiddleware } from "@clerk/nextjs/server";
+import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
+import { NextResponse } from "next/server";
 
-export default clerkMiddleware();
+const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
+
+export default clerkMiddleware(async (auth, req) => {
+  // If the request is for an admin route, check authentication + role
+  if (isAdminRoute(req)) {
+    const { userId, sessionClaims } = await auth();
+
+    // Not signed in → 404 (don't reveal the route exists)
+    if (!userId) {
+      return NextResponse.rewrite(new URL("/not-found", req.url));
+    }
+
+    // Signed in but not admin → 404
+    const role = (sessionClaims?.metadata as { role?: string })?.role;
+    if (role !== "admin") {
+      return NextResponse.rewrite(new URL("/not-found", req.url));
+    }
+  }
+});
 
 export const config = {
   matcher: [
-    // Skip Next.js internals and all static files, unless found in search params
     "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-    // Always run for Clerk's auto-proxy path
     "/__clerk/(.*)",
-    // Always run for API routes
     "/(api|trpc)(.*)",
   ],
 };
