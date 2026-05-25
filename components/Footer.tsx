@@ -182,18 +182,27 @@ export default function Footer() {
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "done">("idle");
 
-  const submitInquiry = useMutation(api.inquiries.submit);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !name || !message) return;
     setStatus("sending");
-    await submitInquiry({ name, email, message });
-    setStatus("done");
-    setEmail("");
-    setName("");
-    setMessage("");
-    setTimeout(() => setStatus("idle"), 4000);
+
+    const res = await fetch("/api/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, email, message }),
+    });
+
+    if (res.ok) {
+      setStatus("done");
+      setEmail("");
+      setName("");
+      setMessage("");
+      setTimeout(() => setStatus("idle"), 4000);
+    } else {
+      setStatus("idle");
+      alert("Something went wrong. Please try again.");
+    }
   };
 
   return (
