@@ -46,7 +46,7 @@ export default function About() {
               alt="Car showroom"
               height={400}
               width={400}
-              className="w-full h-[320px] object-cover"
+              className="w-full h-80 object-cover"
             />
 
             <div className="pointer-events-none absolute inset-3 rounded-3xl ring-2 ring-white/80" />
